@@ -15,33 +15,37 @@ define(function(require, exports, module) {
 
     mainCon.setPerspective(1000);
 
-    var Ship = function Ship() {
+    var Ship = function Ship(shipAlign, shipOrigin) {
       this.surface = new ImageSurface({
         size:[52,52],
         content: '/content/images/AsteroidsShip_color.gif'
       });
+      this.magnitude = 0.0;
+      this.direction = 0;
+      this.alignment = shipAlign;
+      this.state = new StateModifier({
+        align: shipAlign,
+        origin: shipOrigin
+      });
     };
-    var ship0 = new Ship;
-    var initShipPlacement = new StateModifier({
-      align: [0.5, 0.5],
-      origin: [0.5,0.5]
-    });
-    mainCon.add(initShipPlacement).add(ship0.surface);
+    var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
 
-    var logo = new ImageSurface({
-        size: [200, 200],
-        content: '/content/images/famous_logo.png',
-        classes: ['backfaceVisibility']
-    });
+    mainCon.add(ship0.state).add(ship0.surface);
 
-    var initialTime = Date.now();
-    var centerSpinModifier = new Modifier({
-        align: [0.5, 0.5],
-        origin: [0.5, 0.5],
-        transform: function() {
-            return Transform.rotateY(.002 * (Date.now() - initialTime));
-        }
-    });
+    // var logo = new ImageSurface({
+    //     size: [200, 200],
+    //     content: '/content/images/famous_logo.png',
+    //     classes: ['backfaceVisibility']
+    // });
+
+    // var initialTime = Date.now();
+    // var centerSpinModifier = new Modifier({
+    //     align: [0.5, 0.5],
+    //     origin: [0.5, 0.5],
+    //     transform: function() {
+    //         return Transform.rotateY(.002 * (Date.now() - initialTime));
+    //     }
+    // });
 
     // mainCon.add(centerSpinModifier).add(logo);
 });
