@@ -6,7 +6,7 @@ define(function(require, exports, module) {
     var Modifier = require('famous/core/Modifier');
     var Transform = require('famous/core/Transform');
     var ImageSurface = require('famous/surfaces/ImageSurface');
-
+    var StateModifier = require('famous/modifiers/StateModifier');
     // create the main context
     var mainCon = Engine.createContext();
 
@@ -14,6 +14,19 @@ define(function(require, exports, module) {
 
 
     mainCon.setPerspective(1000);
+
+    var Ship = function Ship() {
+      this.surface = new ImageSurface({
+        size:[52,52],
+        content: '/content/images/AsteroidsShip_color.gif'
+      });
+    };
+    var ship0 = new Ship;
+    var initShipPlacement = new StateModifier({
+      align: [0.5, 0.5],
+      origin: [0.5,0.5]
+    });
+    mainCon.add(initShipPlacement).add(ship0.surface);
 
     var logo = new ImageSurface({
         size: [200, 200],
@@ -30,5 +43,5 @@ define(function(require, exports, module) {
         }
     });
 
-    mainCon.add(centerSpinModifier).add(logo);
+    // mainCon.add(centerSpinModifier).add(logo);
 });
