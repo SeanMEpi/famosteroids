@@ -11,6 +11,7 @@ define(function(require, exports, module) {
     var Circle = require('famous/physics/bodies/Circle');
     var Body = require('famous/physics/bodies/Body');
     var Vector = require('famous/math/Vector');
+    var Timer = require('famous/utilities/Timer');
     // create the main context
     var mainCon = Engine.createContext();
 
@@ -72,6 +73,16 @@ define(function(require, exports, module) {
       };
     });
 
+    Timer.every( function() {
+    for (var i=0; i<shipArray.length; i++) {
+      // ballArray[i].setMagAndDir(0.8, ballArray[i].readDirection());
+      shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
+      //wallSound0.ampControl(audioContext, -.01);
+      //wallSound1.ampControl(audioContext, -.01);
+      //wallSound2.ampControl(audioContext, -.01);
+      //wallSound3.ampControl(audioContext, -.01);
+    }
+  }, 1);
 
     // var logo = new ImageSurface({
     //     size: [200, 200],
