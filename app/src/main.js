@@ -59,7 +59,17 @@ define(function(require, exports, module) {
     physicsEng.addBody(ship0.particle);
     shipArray.push(ship0);
 
-    ship0.setMagnitudeAndDirection(0.0, 270);
+    console.log(ship0.direction);
+    ship0.setMagnitudeAndDirection(0.0, 0);
+    console.log(ship0.direction);
+
+    Engine.on('keydown', function(e) {
+      if (e.which === 65) {
+        ship0.setMagnitudeAndDirection(0.0, 180);
+        mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
+        console.log(ship0.direction);
+      }
+    });
 
     mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
 
