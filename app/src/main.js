@@ -30,8 +30,11 @@ define(function(require, exports, module) {
         origin: shipOrigin
       });
       this.particle = new Circle({radius:20});
-      this.magnitude = 0.0;
-      this.direction = 0;
+      this.direction = 0.0;
+      this.rotationModifier = function() {
+        return new StateModifier({ transform: Transform.rotateZ(this.direction) });
+      };
+
       this.getMagnitude = function() {
         return Math.sqrt( ((this.particle.getVelocity()[0]) * (this.particle.getVelocity()[0])) + ((this.particle.getVelocity()[1]) * (this.particle.getVelocity()[1])) );
       };
@@ -48,17 +51,17 @@ define(function(require, exports, module) {
         var xComp = magnitude * Math.cos(direction);
         var yComp = -1 * magnitude * Math.sin(direction);
         this.particle.setVelocity([xComp,yComp,0]);
+        this.direction = direction;
       };
     };
-
-    var testRotationModifier = new StateModifier({
-      transform: Transform.rotateZ(Math.PI/2)
-    });
 
     var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
     physicsEng.addBody(ship0.particle);
     shipArray.push(ship0);
-    mainCon.add(ship0.state).add(testRotationModifier).add(ship0.surface);
+
+    ship0.setMagnitudeAndDirection(0.0, 270);
+
+    mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
 
     // var logo = new ImageSurface({
     //     size: [200, 200],
