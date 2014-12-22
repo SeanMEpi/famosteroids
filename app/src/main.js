@@ -45,23 +45,14 @@ define(function(require, exports, module) {
       this.rotationModifier = function() {
         return new StateModifier({ transform: Transform.rotateZ(this.direction) });
       };
-      this.setXY = function() {
-        var X = this.velocity * Math.cos(this.direction);
-        var Y = this.velocity * Math.sin(this.direction);
-        this.particle.setVelocity([X,Y,0]);
-      };
       this.addVector = function() {
         var XToAdd = 0.1 * Math.cos(this.direction);
         var YToAdd = 0.1 * Math.sin(this.direction);
-        console.log("X to add: " + XToAdd + " Y to add: " + YToAdd);
         var currentX = this.particle.getVelocity()[0];
         var currentY = this.particle.getVelocity()[1];
-        console.log("Current X: " + currentX + " Current Y: " + currentY);
         var newX = currentX + XToAdd;
         var newY = currentY + YToAdd;
-        console.log("New X: " + newX + " New Y: " + newY);
         this.particle.setVelocity([newX, newY, 0]);
-        console.log("Resultant Vector: " + this.particle.getVelocity());
       };
     };
 
@@ -92,10 +83,22 @@ define(function(require, exports, module) {
       } else if ( (thing.particle.getPosition()[1]) <= (- window.innerWidth / 2) ) {
         thing.particle.setPosition([thing.particle.getPosition()[0], window.innerHeight / 2, 0]);
       };
-    }
+    };
+
+    var magnitudeLimit = function(thing, maxMagnitude) {
+      var magnitude = Math.sqrt( ((thing.particle.getVelocity()[0]) * (thing.particle.getVelocity()[0])) + ((thing.particle.getVelocity()[1]) * (thing.particle.getVelocity()[1])) )
+      console.log("Current Magnitude: " + magnitude);
+      if (magnitude >= maxMagnitude) {
+        var xComponant = maxMagnitude * Math.cos(thing.direction);
+        var yComponant = maxMagnitude * Math.sin(thing.direction);
+        thing.particle.setVelocity([xComponant, yComponant, 0]);
+      }
+
+    };
 
     Timer.every( function() {
       for (var i=0; i<shipArray.length; i++) {
+        magnitudeLimit(shipArray[i], 1);
         shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
         wraparound(shipArray[i]);
       };
