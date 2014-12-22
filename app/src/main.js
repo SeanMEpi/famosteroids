@@ -10,6 +10,7 @@ define(function(require, exports, module) {
     var PhysicsEngine = require ('famous/physics/PhysicsEngine');
     var Circle = require('famous/physics/bodies/Circle');
     var Body = require('famous/physics/bodies/Body');
+    var Vector = require('famous/math/Vector');
     // create the main context
     var mainCon = Engine.createContext();
 
@@ -30,48 +31,46 @@ define(function(require, exports, module) {
         origin: shipOrigin
       });
       this.particle = new Circle({radius:20});
-      this.direction = 0.0;
+      this.direction = 0.0; //radians
       this.rotationModifier = function() {
         return new StateModifier({ transform: Transform.rotateZ(this.direction) });
       };
-
-      this.getMagnitude = function() {
-        return Math.sqrt( ((this.particle.getVelocity()[0]) * (this.particle.getVelocity()[0])) + ((this.particle.getVelocity()[1]) * (this.particle.getVelocity()[1])) );
+      this.setXY = function() {
+        var X = this.velocity * Math.cos(this.direction);
+        var Y = this.velocity * Math.sin(this.direction);
+        this.particle.setVelocity([X,Y,0]);
       };
-      this.getDirection = function() {
-        var direction = Math.atan2((-1 * this.particle.getVelocity()[1]), this.particle.getVelocity()[0]);
-        direction = direction * (180 / Math.PI);
-        if (this.particle.getVelocity()[1] > 0) {
-          direction = direction + 360;
-        }
-        return direction;
-      };
-      this.setMagnitudeAndDirection = function(magnitude, direction) {
-        direction = direction * (Math.PI / 180);
-        var xComp = magnitude * Math.cos(direction);
-        var yComp = -1 * magnitude * Math.sin(direction);
-        this.particle.setVelocity([xComp,yComp,0]);
-        this.direction = direction;
+      this.addVector = function() {
+        var vecToAdd = new Vector(0.1 * Math.cos(this.direction), 0.1 * Math.sin(this.direction), 0);
+        console.log("Vector to add: " + vecToAdd.get());
+        var currentVec = new Vector(this.particle.getVelocity()[0], this.particle.getVelocity()[1], 0);
+        console.log("CurrentVector: " + currentVec.get());
+        currentVec = currentVec.add(vecToAdd);
+        console.log("Resultant: " + currentVec.get());
+        this.particle.setVelocity(currentVec.get()[0], currentVec.get()[1], 0);
       };
     };
 
     var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
     physicsEng.addBody(ship0.particle);
     shipArray.push(ship0);
-
-    console.log(ship0.direction);
-    ship0.setMagnitudeAndDirection(0.0, 0);
-    console.log(ship0.direction);
+    mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
 
     Engine.on('keydown', function(e) {
       if (e.which === 65) {
-        ship0.setMagnitudeAndDirection(0.0, 180);
+        ship0.direction -= Math.PI / 20;
         mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
         console.log(ship0.direction);
-      }
+      } else if (e.which === 68) {
+        ship0.direction += Math.PI / 20;
+        mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
+        console.log(ship0.direction);
+      } else if (e.which === 87) {
+        ship0.addVector();
+        console.log(ship0.velocity);
+      };
     });
 
-    mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
 
     // var logo = new ImageSurface({
     //     size: [200, 200],
