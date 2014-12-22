@@ -41,13 +41,17 @@ define(function(require, exports, module) {
         this.particle.setVelocity([X,Y,0]);
       };
       this.addVector = function() {
-        var vecToAdd = new Vector(0.1 * Math.cos(this.direction), 0.1 * Math.sin(this.direction), 0);
-        console.log("Vector to add: " + vecToAdd.get());
-        var currentVec = new Vector(this.particle.getVelocity()[0], this.particle.getVelocity()[1], 0);
-        console.log("CurrentVector: " + currentVec.get());
-        currentVec = currentVec.add(vecToAdd);
-        console.log("Resultant: " + currentVec.get());
-        this.particle.setVelocity(currentVec.get()[0], currentVec.get()[1], 0);
+        var XToAdd = 0.1 * Math.cos(this.direction);
+        var YToAdd = 0.1 * Math.sin(this.direction);
+        console.log("X to add: " + XToAdd + " Y to add: " + YToAdd);
+        var currentX = this.particle.getVelocity()[0];
+        var currentY = this.particle.getVelocity()[1];
+        console.log("Current X: " + currentX + " Current Y: " + currentY);
+        var newX = currentX + XToAdd;
+        var newY = currentY + YToAdd;
+        console.log("New X: " + newX + " New Y: " + newY);
+        this.particle.setVelocity([newX, newY, 0]);
+        console.log("Resultant Vector: " + this.particle.getVelocity());
       };
     };
 
@@ -60,14 +64,11 @@ define(function(require, exports, module) {
       if (e.which === 65) {
         ship0.direction -= Math.PI / 20;
         mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
-        console.log(ship0.direction);
       } else if (e.which === 68) {
         ship0.direction += Math.PI / 20;
         mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
-        console.log(ship0.direction);
       } else if (e.which === 87) {
         ship0.addVector();
-        console.log(ship0.velocity);
       };
     });
 
