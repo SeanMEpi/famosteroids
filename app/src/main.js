@@ -6,6 +6,7 @@ define(function(require, exports, module) {
     var Modifier = require('famous/core/Modifier');
     var Transform = require('famous/core/Transform');
     var ImageSurface = require('famous/surfaces/ImageSurface');
+    var Surface = require('famous/core/Surface');
     var StateModifier = require('famous/modifiers/StateModifier');
     var PhysicsEngine = require ('famous/physics/PhysicsEngine');
     var Circle = require('famous/physics/bodies/Circle');
@@ -18,7 +19,15 @@ define(function(require, exports, module) {
     // your app here
     var physicsEng = new PhysicsEngine();
 
-    mainCon.setPerspective(1000);
+    //mainCon.setPerspective(1000);
+
+    var background = new Surface({
+      size: [(window.innerWidth), (window.innerHeight)],
+      properties: {
+        backgroundColor: '#FFFFCC'
+      }
+    });
+    mainCon.add(background);
 
     var shipArray = [];
     var Ship = function Ship(shipAlign, shipOrigin) {
@@ -73,31 +82,23 @@ define(function(require, exports, module) {
       };
     });
 
-    Timer.every( function() {
-    for (var i=0; i<shipArray.length; i++) {
-      // ballArray[i].setMagAndDir(0.8, ballArray[i].readDirection());
-      shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
-      //wallSound0.ampControl(audioContext, -.01);
-      //wallSound1.ampControl(audioContext, -.01);
-      //wallSound2.ampControl(audioContext, -.01);
-      //wallSound3.ampControl(audioContext, -.01);
+    var wraparound = function(thing) {
+      if ( (thing.particle.getPosition()[0]) >= (window.innerWidth / 2) ) {
+        thing.particle.setPosition([- window.innerWidth / 2, thing.particle.getPosition()[1], 0]);
+      } else if ( (thing.particle.getPosition()[0]) <= (- window.innerWidth / 2) ) {
+        thing.particle.setPosition([window.innerWidth / 2, thing.particle.getPosition()[1], 0]);
+      } else if ( (thing.particle.getPosition()[1]) >= (window.innerHeight / 2) ) {
+        thing.particle.setPosition([thing.particle.getPosition()[0], (-window.innerHeight / 2), 0]);
+      } else if ( (thing.particle.getPosition()[1]) <= (- window.innerWidth / 2) ) {
+        thing.particle.setPosition([thing.particle.getPosition()[0], window.innerHeight / 2, 0]);
+      };
     }
-  }, 1);
 
-    // var logo = new ImageSurface({
-    //     size: [200, 200],
-    //     content: '/content/images/famous_logo.png',
-    //     classes: ['backfaceVisibility']
-    // });
+    Timer.every( function() {
+      for (var i=0; i<shipArray.length; i++) {
+        shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
+        wraparound(shipArray[i]);
+      };
+    }, 1);
 
-    // var initialTime = Date.now();
-    // var centerSpinModifier = new Modifier({
-    //     align: [0.5, 0.5],
-    //     origin: [0.5, 0.5],
-    //     transform: function() {
-    //         return Transform.rotateY(.002 * (Date.now() - initialTime));
-    //     }
-    // });
-
-    // mainCon.add(centerSpinModifier).add(logo);
 });
