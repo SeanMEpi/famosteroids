@@ -9,18 +9,22 @@ define(function(require, exports, module) {
     var Surface = require('famous/core/Surface');
     var StateModifier = require('famous/modifiers/StateModifier');
     var PhysicsEngine = require ('famous/physics/PhysicsEngine');
+    var Collision = require('famous/physics/constraints/Collision');
     var Circle = require('famous/physics/bodies/Circle');
     var Body = require('famous/physics/bodies/Body');
     var Vector = require('famous/math/Vector');
     var Timer = require('famous/utilities/Timer');
     var Random = require('famous/math/Random');
+
     // create the main context
     var mainCon = Engine.createContext();
 
     // your app here
     var physicsEng = new PhysicsEngine();
-
-    //mainCon.setPerspective(1000);
+    var collision = new Collision();
+    collision.on('collision', function() {
+      console.log('Collision!');
+    });
 
     var background = new Surface({
       size: [(window.innerWidth), (window.innerHeight)],
@@ -30,7 +34,7 @@ define(function(require, exports, module) {
     });
     mainCon.add(background);
 
-    var thingArray = [];
+    var shipArray = [];
 
     var Ship = function Ship(shipAlign, shipOrigin) {
       this.surface = new ImageSurface({
@@ -59,9 +63,10 @@ define(function(require, exports, module) {
     };
     var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
     physicsEng.addBody(ship0.particle);
-    thingArray.push(ship0);
+    shipArray.push(ship0);
     mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
 
+    var asteroidArray = [];
     var Asteroid = function Asteroid() {
       this.surface = new ImageSurface({
         size:[100,101],
@@ -71,7 +76,7 @@ define(function(require, exports, module) {
         align: [0.5, 0.5],
         origin: [0.5, 0.5]
       });
-      this.particle = new Circle({radius:20});
+      this.particle = new Circle({radius:45});
       this.direction = 0.0; //radians
       this.rotationModifier = function() {
         return new StateModifier({ transform: Transform.rotateZ(this.direction) });
@@ -86,7 +91,10 @@ define(function(require, exports, module) {
         this.particle.setVelocity([newX, newY, 0]);
       };
       physicsEng.addBody(this.particle);
-      thingArray.push(this);
+      for (var i=0; i< shipArray.length; i++) {
+        physicsEng.attach(collision, shipArray[i].particle, this.particle);
+      };
+      asteroidArray.push(this);
       mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
       var randomDirection = Random.range(0, 2 * Math.PI);
       this.direction = randomDirection;
@@ -102,6 +110,7 @@ define(function(require, exports, module) {
     var ast3 = new Asteroid();
     var ast4 = new Asteroid();
 
+
     Engine.on('keydown', function(e) {
       if (e.which === 65) {
         ship0.direction -= Math.PI / 20;
@@ -116,8 +125,6 @@ define(function(require, exports, module) {
 
     var wraparound = function(thing) {
       if ( (thing.particle.getPosition()[0]) >= (window.innerWidth / 2) ) {
-        console.log("Wrapped at X position " + thing.particle.getPosition()[0]);
-        console.log("InnerWidth / 2: " + (window.innerWidth / 2));
         thing.particle.setPosition([- window.innerWidth / 2, thing.particle.getPosition()[1], 0]);
       } else if ( (thing.particle.getPosition()[0]) <= (- window.innerWidth / 2) ) {
         thing.particle.setPosition([window.innerWidth / 2, thing.particle.getPosition()[1], 0]);
@@ -138,15 +145,15 @@ define(function(require, exports, module) {
     };
 
     Timer.every( function() {
-      // for (var i=0; i < asteroidArray.length; i++) {
-      //   magnitudeLimit(asteroidArray[i], 1);
-      //   asteroidArray[i].state.setTransform(asteroidArray[i].particle.getTransform());
-      //   wraparound(asteroidArray[i]);
-      // };
-      for (var i=0; i < thingArray.length; i++) {
-        magnitudeLimit(thingArray[i], 1);
-        thingArray[i].state.setTransform(thingArray[i].particle.getTransform());
-        wraparound(thingArray[i]);
+      for (var i=0; i < shipArray.length; i++) {
+        magnitudeLimit(shipArray[i], 1);
+        shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
+        wraparound(shipArray[i]);
+      };
+      for (var i=0; i < asteroidArray.length; i++) {
+        magnitudeLimit(asteroidArray[i], 1);
+        asteroidArray[i].state.setTransform(asteroidArray[i].particle.getTransform());
+        wraparound(asteroidArray[i]);
       };
     }, 1);
 
