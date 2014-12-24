@@ -16,15 +16,9 @@ define(function(require, exports, module) {
     var Timer = require('famous/utilities/Timer');
     var Random = require('famous/math/Random');
 
-    // create the main context
+    // create global items
     var mainCon = Engine.createContext();
-
-    // your app here
     var physicsEng = new PhysicsEngine();
-    // var collision = new Collision();
-    // collision.on('postCollision', function() {
-    //   ship0.particle.setVelocity([0,0,0]);
-    // });
 
     var background = new Surface({
       size: [(window.innerWidth), (window.innerHeight)],
@@ -33,6 +27,8 @@ define(function(require, exports, module) {
       }
     });
     mainCon.add(background);
+
+    /* ------- ship setup -------- */
 
     var shipArray = [];
 
@@ -61,14 +57,20 @@ define(function(require, exports, module) {
         this.particle.setVelocity([newX, newY, 0]);
       };
       this.collision = new Collision();
-        this.collision.on('postCollision', function() {
-        ship0.particle.setVelocity([0,0,0]);
-      });
+      this.onCollision = function() {
+        this.particle.setVelocity([0,0,0]);
+      };
+      physicsEng.addBody(this.particle);
+      shipArray.push(this);
+      mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
     };
+
     var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
-    physicsEng.addBody(ship0.particle);
-    shipArray.push(ship0);
-    mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
+    ship0.collision.on('postCollision', function() {
+        ship0.onCollision();                          // if this line is in ship object & this.onCollison()
+    });                                               // it fails. So the decleration is left here.
+
+    /* -------- Asteroid Setup -------- */
 
     var asteroidArray = [];
     var Asteroid = function Asteroid() {
@@ -114,6 +116,7 @@ define(function(require, exports, module) {
     var ast3 = new Asteroid();
     var ast4 = new Asteroid();
 
+    /* --------- player controls -------- */
 
     Engine.on('keydown', function(e) {
       if (e.which === 65) {
@@ -126,6 +129,8 @@ define(function(require, exports, module) {
         ship0.addVector();
       };
     });
+
+    /* -------- utility functions -------- */
 
     var wraparound = function(thing) {
       if ( (thing.particle.getPosition()[0]) >= (window.innerWidth / 2) ) {
@@ -147,6 +152,8 @@ define(function(require, exports, module) {
         thing.particle.setVelocity([xComponant, yComponant, 0]);
       }
     };
+
+    /* -------- main event loop -------- */
 
     Timer.every( function() {
       for (var i=0; i < shipArray.length; i++) {
