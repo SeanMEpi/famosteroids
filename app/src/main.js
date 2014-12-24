@@ -21,10 +21,10 @@ define(function(require, exports, module) {
 
     // your app here
     var physicsEng = new PhysicsEngine();
-    var collision = new Collision();
-    collision.on('collision', function() {
-      console.log('Collision!');
-    });
+    // var collision = new Collision();
+    // collision.on('postCollision', function() {
+    //   ship0.particle.setVelocity([0,0,0]);
+    // });
 
     var background = new Surface({
       size: [(window.innerWidth), (window.innerHeight)],
@@ -60,6 +60,10 @@ define(function(require, exports, module) {
         var newY = currentY + YToAdd;
         this.particle.setVelocity([newX, newY, 0]);
       };
+      this.collision = new Collision();
+        this.collision.on('postCollision', function() {
+        ship0.particle.setVelocity([0,0,0]);
+      });
     };
     var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
     physicsEng.addBody(ship0.particle);
@@ -92,7 +96,7 @@ define(function(require, exports, module) {
       };
       physicsEng.addBody(this.particle);
       for (var i=0; i< shipArray.length; i++) {
-        physicsEng.attach(collision, shipArray[i].particle, this.particle);
+        physicsEng.attach(shipArray[i].collision, shipArray[i].particle, this.particle);
       };
       asteroidArray.push(this);
       mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
