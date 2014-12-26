@@ -1,4 +1,4 @@
-/* globals define */
+/* -------- famo.us setup -------- */
 define(function(require, exports, module) {
     'use strict';
     // import dependencies
@@ -16,7 +16,8 @@ define(function(require, exports, module) {
     var Timer = require('famous/utilities/Timer');
     var Random = require('famous/math/Random');
 
-    // create global items
+    /* -------- global setup -------- */
+
     var mainCon = Engine.createContext();
     var physicsEng = new PhysicsEngine();
 
@@ -72,11 +73,6 @@ define(function(require, exports, module) {
       mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
     };
 
-    var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
-    ship0.collision.on('postCollision', function() {
-        ship0.onCollision();                          // if this line is in ship object & this.onCollison()
-    });                                               // it fails. So the declaration is left here.
-
     /* -------- Asteroid Setup -------- */
 
     var asteroidArray = [];
@@ -116,12 +112,6 @@ define(function(require, exports, module) {
       var randomY = Random.integer(-window.innerHeight, window.innerHeight);
       this.particle.setPosition([ randomX, randomY, 0]);
     };
-
-    var ast0 = new Asteroid();
-    var ast1 = new Asteroid();
-    var ast2 = new Asteroid();
-    var ast3 = new Asteroid();
-    var ast4 = new Asteroid();
 
     /* --------- player controls -------- */
 
@@ -176,5 +166,18 @@ define(function(require, exports, module) {
         wraparound(asteroidArray[i]);
       };
     }, 1);
+
+    /* -------- add objects to play screen -------- */
+
+    var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
+    ship0.collision.on('postCollision', function() {
+        ship0.onCollision();
+    });
+
+    var ast0 = new Asteroid();
+    var ast1 = new Asteroid();
+    var ast2 = new Asteroid();
+    var ast3 = new Asteroid();
+    var ast4 = new Asteroid();
 
 });
