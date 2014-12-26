@@ -33,7 +33,7 @@ define(function(require, exports, module) {
 
     var shipArray = [];
 
-    var Ship = function Ship(shipAlign, shipOrigin) {
+    var Ship = function Ship() {
       this.surface = new ImageSurface({
         size:[52,52],
         content: '/content/images/AsteroidsShip_white_on_black.gif'
@@ -43,10 +43,9 @@ define(function(require, exports, module) {
         content: 'content/images/graphics-explosions-210621.gif'
       });
       this.enabled = true;
-      this.alignment = shipAlign;
       this.state = new StateModifier({
-        align: shipAlign,
-        origin: shipOrigin
+        align: [0.5,0.5],
+        origin: [0.5,0.5]
       });
       this.particle = new Circle({radius:20});
       this.direction = 0.0; //radians
@@ -63,11 +62,13 @@ define(function(require, exports, module) {
         this.particle.setVelocity([newX, newY, 0]);
       };
       this.collision = new Collision();
-      this.onCollision = function() {
+      this.collision.particle = this.particle;
+      this.collision.state = this.state;
+      this.collision.explosion = this.explosion;
+      this.collision.on('postCollision', function() {
         this.particle.setVelocity([0,0,0]);
         mainCon.add(this.state).add(this.explosion);
-        this.enabled = false;
-      };
+      });
       physicsEng.addBody(this.particle);
       shipArray.push(this);
       mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
@@ -154,11 +155,9 @@ define(function(require, exports, module) {
 
     Timer.every( function() {
       for (var i=0; i < shipArray.length; i++) {
-        if (shipArray[i].enabled) {
-          magnitudeLimit(shipArray[i], 1);
-          shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
-          wraparound(shipArray[i]);
-        }
+        magnitudeLimit(shipArray[i], 1);
+        shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
+        wraparound(shipArray[i]);
       };
       for (var i=0; i < asteroidArray.length; i++) {
         magnitudeLimit(asteroidArray[i], 1);
@@ -169,10 +168,7 @@ define(function(require, exports, module) {
 
     /* -------- add objects to play screen -------- */
 
-    var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
-    ship0.collision.on('postCollision', function() {
-        ship0.onCollision();
-    });
+    var ship0 = new Ship();
 
     var ast0 = new Asteroid();
     var ast1 = new Asteroid();
