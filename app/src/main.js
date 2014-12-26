@@ -23,7 +23,7 @@ define(function(require, exports, module) {
     var background = new Surface({
       size: [(window.innerWidth), (window.innerHeight)],
       properties: {
-        backgroundColor: '#FFFFFF'
+        backgroundColor: '#030303'
       }
     });
     mainCon.add(background);
@@ -35,8 +35,13 @@ define(function(require, exports, module) {
     var Ship = function Ship(shipAlign, shipOrigin) {
       this.surface = new ImageSurface({
         size:[52,52],
-        content: '/content/images/AsteroidsShip_color.gif'
+        content: '/content/images/AsteroidsShip_white_on_black.gif'
       });
+      this.explosion = new ImageSurface({
+        size:[100,100],
+        content: 'content/images/graphics-explosions-210621.gif'
+      });
+      this.enabled = true;
       this.alignment = shipAlign;
       this.state = new StateModifier({
         align: shipAlign,
@@ -59,6 +64,8 @@ define(function(require, exports, module) {
       this.collision = new Collision();
       this.onCollision = function() {
         this.particle.setVelocity([0,0,0]);
+        mainCon.add(this.state).add(this.explosion);
+        this.enabled = false;
       };
       physicsEng.addBody(this.particle);
       shipArray.push(this);
@@ -68,7 +75,7 @@ define(function(require, exports, module) {
     var ship0 = new Ship([0.5,0.5],[0.5,0.5]);
     ship0.collision.on('postCollision', function() {
         ship0.onCollision();                          // if this line is in ship object & this.onCollison()
-    });                                               // it fails. So the decleration is left here.
+    });                                               // it fails. So the declaration is left here.
 
     /* -------- Asteroid Setup -------- */
 
@@ -76,7 +83,7 @@ define(function(require, exports, module) {
     var Asteroid = function Asteroid() {
       this.surface = new ImageSurface({
         size:[100,101],
-        content: '/content/images/asteroid_100px.png'
+        content: '/content/images/asteroid_100px_WhiteOnBlack.png'
       });
       this.state = new StateModifier({
         align: [0.5, 0.5],
@@ -157,9 +164,11 @@ define(function(require, exports, module) {
 
     Timer.every( function() {
       for (var i=0; i < shipArray.length; i++) {
-        magnitudeLimit(shipArray[i], 1);
-        shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
-        wraparound(shipArray[i]);
+        if (shipArray[i].enabled) {
+          magnitudeLimit(shipArray[i], 1);
+          shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
+          wraparound(shipArray[i]);
+        }
       };
       for (var i=0; i < asteroidArray.length; i++) {
         magnitudeLimit(asteroidArray[i], 1);
