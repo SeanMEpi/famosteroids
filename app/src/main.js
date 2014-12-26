@@ -36,13 +36,12 @@ define(function(require, exports, module) {
     var Ship = function Ship() {
       this.surface = new ImageSurface({
         size:[52,52],
-        content: '/content/images/AsteroidsShip_white_on_black.gif'
+        content: '/content/images/AsteroidsShip_color.gif'
       });
       this.explosion = new ImageSurface({
         size:[100,100],
         content: 'content/images/graphics-explosions-210621.gif'
       });
-      this.enabled = true;
       this.state = new StateModifier({
         align: [0.5,0.5],
         origin: [0.5,0.5]
@@ -50,23 +49,31 @@ define(function(require, exports, module) {
       this.particle = new Circle({radius:20});
       this.direction = 0.0; //radians
       this.rotationModifier = function() {
-        return new StateModifier({ transform: Transform.rotateZ(this.direction) });
+        if (this.collision.allowRotation) {
+          return new StateModifier({ transform: Transform.rotateZ(this.direction) });
+        }
       };
       this.addVector = function() {
-        var XToAdd = 0.1 * Math.cos(this.direction);
-        var YToAdd = 0.1 * Math.sin(this.direction);
-        var currentX = this.particle.getVelocity()[0];
-        var currentY = this.particle.getVelocity()[1];
-        var newX = currentX + XToAdd;
-        var newY = currentY + YToAdd;
-        this.particle.setVelocity([newX, newY, 0]);
+        if (this.collision.allowAddVector) {
+          var XToAdd = 0.1 * Math.cos(this.direction);
+          var YToAdd = 0.1 * Math.sin(this.direction);
+          var currentX = this.particle.getVelocity()[0];
+          var currentY = this.particle.getVelocity()[1];
+          var newX = currentX + XToAdd;
+          var newY = currentY + YToAdd;
+          this.particle.setVelocity([newX, newY, 0]);
+        }
       };
       this.collision = new Collision();
+      this.collision.allowRotation = true;
+      this.collision.allowAddVector = true;
       this.collision.particle = this.particle;
       this.collision.state = this.state;
       this.collision.explosion = this.explosion;
       this.collision.on('postCollision', function() {
         this.particle.setVelocity([0,0,0]);
+        this.allowAddVector = false;
+        this.allowRotation = false;
         mainCon.add(this.state).add(this.explosion);
       });
       physicsEng.addBody(this.particle);
