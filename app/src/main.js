@@ -40,7 +40,7 @@ define(function(require, exports, module) {
       });
       this.explosion = new ImageSurface({
         size:[100,100],
-        content: 'content/images/graphics-explosions-210621.gif'
+        content: 'content/images/graphics-explosions-once.gif'
       });
       this.state = new StateModifier({
         align: [0.5,0.5],
@@ -69,6 +69,7 @@ define(function(require, exports, module) {
       this.collision.allowAddVector = true;
       this.collision.particle = this.particle;
       this.collision.state = this.state;
+      this.collision.surface = this.surface;
       this.collision.explosion = this.explosion;
       this.collision.on('postCollision', function() {
         this.particle.setVelocity([0,0,0]);
@@ -76,6 +77,11 @@ define(function(require, exports, module) {
         this.allowRotation = false;
         mainCon.add(this.state).add(this.explosion);
       });
+      this.resetShip = function() {
+        this.collision.allowAddVector = false;
+        this.collision.allowRotation = false;
+        mainCon.add(this.state).add(this.surface);
+      };
       physicsEng.addBody(this.particle);
       shipArray.push(this);
       mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
