@@ -76,15 +76,11 @@ define(function(require, exports, module) {
         this.resetCounter += 1;
         if (this.resetCounter === 180) {
           this.collision.alive = true;
-          // this.particle.setPosition([ window.innerWidth / 2, window.innerHeight /2, 0]);
+          this.particle.setPosition([ 0, 0, 0]);
           mainCon.add(this.state).add(this.surface);
           this.resetCounter = 0;
           return
         };
-        console.log(this.resetCounter);
-        // this.collision.alive = true;
-        // this.particle.setPosition([ window.innerWidth / 2, window.innerHeight /2, 0]);
-        // mainCon.add(this.state).add(this.surface);
       };
       physicsEng.addBody(this.particle);
       shipArray.push(this);
