@@ -36,7 +36,7 @@ define(function(require, exports, module) {
     var Ship = function Ship() {
       this.surface = new ImageSurface({
         size:[52,52],
-        content: '/content/images/AsteroidsShip_color.gif'
+        content: '/content/images/ship_2.png'
       });
       this.state = new StateModifier({
         align: [0.5,0.5],
@@ -94,7 +94,7 @@ define(function(require, exports, module) {
     var Asteroid = function Asteroid() {
       this.surface = new ImageSurface({
         size:[100,101],
-        content: '/content/images/asteroid_100px_WhiteOnBlack.png'
+        content: '/content/images/asteroid_2.png'
       });
       this.state = new StateModifier({
         align: [0.5, 0.5],
