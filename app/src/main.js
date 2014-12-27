@@ -48,8 +48,8 @@ define(function(require, exports, module) {
         return new StateModifier({ transform: Transform.rotateZ(this.direction) });
       };
       this.addVector = function() {
-        var XToAdd = 0.1 * Math.cos(this.direction);
-        var YToAdd = 0.1 * Math.sin(this.direction);
+        var XToAdd = 0.02 * Math.cos(this.direction);
+        var YToAdd = 0.02 * Math.sin(this.direction);
         var currentX = this.particle.getVelocity()[0];
         var currentY = this.particle.getVelocity()[1];
         var newX = currentX + XToAdd;
@@ -128,19 +128,15 @@ define(function(require, exports, module) {
       this.particle.setPosition([ randomX, randomY, 0]);
     };
 
-    /* --------- player controls -------- */
+    /* --------- keystate register for player controls -------- */
 
-    Engine.on('keydown', function(e) {
-      if (e.which === 65 && ship0.collision.alive) {
-        ship0.direction -= Math.PI / 20;
-        mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
-      } else if (e.which === 68 && ship0.collision.alive)  {
-        ship0.direction += Math.PI / 20;
-        mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
-      } else if (e.which === 87 && ship0.collision.alive) {
-        ship0.addVector();
-      };
-    });
+    var keyState = {};
+    Engine.on('keydown',function(e){
+      keyState[e.keyCode || e.which] = true;
+    },true);
+    Engine.on('keyup',function(e){
+      keyState[e.keyCode || e.which] = false;
+    },true);
 
     /* -------- utility functions -------- */
 
@@ -174,13 +170,26 @@ define(function(require, exports, module) {
         wraparound(shipArray[i]);
         if (shipArray[i].collision.alive === false) {
           shipArray[i].resetShip();
-        }
+        };
+        if (keyState[65] && shipArray[i].collision.alive) {
+        shipArray[i].direction -= Math.PI / 32;
+        mainCon.add(shipArray[i].state).add(shipArray[i].rotationModifier()).add(shipArray[i].surface);
+        };
+        if (keyState[68] && shipArray[i].collision.alive) {
+          shipArray[i].direction += Math.PI / 32;
+          mainCon.add(shipArray[i].state).add(shipArray[i].rotationModifier()).add(shipArray[i].surface);
+        };
+        if (keyState[87] && shipArray[i].collision.alive) {
+          shipArray[i].addVector();
+        };
       };
+
       for (var i=0; i < asteroidArray.length; i++) {
         magnitudeLimit(asteroidArray[i], 1);
         asteroidArray[i].state.setTransform(asteroidArray[i].particle.getTransform());
         wraparound(asteroidArray[i]);
       };
+
     }, 1);
 
     /* -------- add objects to play screen -------- */
