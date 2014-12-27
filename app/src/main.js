@@ -43,7 +43,7 @@ define(function(require, exports, module) {
         origin: [0.5,0.5]
       });
       this.particle = new Circle({radius:20});
-      this.direction = 0.0; //radians
+      this.direction = 3 * Math.PI / 2; //radians
       this.rotationModifier = function() {
         return new StateModifier({ transform: Transform.rotateZ(this.direction) });
       };
@@ -76,8 +76,9 @@ define(function(require, exports, module) {
         this.resetCounter += 1;
         if (this.resetCounter === 180) {
           this.collision.alive = true;
+          this.direction = 3 * Math.PI / 2;
           this.particle.setPosition([ 0, 0, 0]);
-          mainCon.add(this.state).add(this.surface);
+          mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
           this.resetCounter = 0;
           return
         };
