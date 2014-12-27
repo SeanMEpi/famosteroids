@@ -27,7 +27,11 @@ define(function(require, exports, module) {
         backgroundColor: '#030303'
       }
     });
-    mainCon.add(background);
+    var backgroundStateMod = new StateModifier({
+      transform: Transform.translate(0,0,-2)
+    });
+
+    mainCon.add(backgroundStateMod).add(background);
 
     /* ------- ship setup -------- */
 
@@ -58,18 +62,25 @@ define(function(require, exports, module) {
       };
       this.collision = new Collision();
       this.collision.alive = true;
-      this.collision.explosion = new ImageSurface({
-        size:[100,100],
-        content: 'content/images/graphics-explosions-210621.gif'
-      });
+      this.collision.explosion = function() {
+        return new ImageSurface({
+          size:[100,100],
+          content: 'content/images/graphics-explosions-210621.gif'
+        });
+      };
+      this.collision.explosionStateMod = new StateModifier({
+         transform: Transform.translate(0, 0, -1)
+      })
       // these next 4 are duplicates passed to collision handler
       this.collision.particle = this.particle;
       this.collision.state = this.state;
       this.collision.surface = this.surface;
       this.collision.on('postCollision', function() {
         this.particle.setVelocity([0,0,0]);
+
         this.alive = false;
-        mainCon.add(this.state).add(this.explosion);
+        explosionDisplay = this.explosion();
+        mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
       });
       this.resetCounter = 0;
       this.resetShip = function() {
@@ -77,8 +88,8 @@ define(function(require, exports, module) {
         if (this.resetCounter === 180) {
           this.collision.alive = true;
           this.direction = 3 * Math.PI / 2;
-          this.particle.setPosition([ 0, 0, 0]);
           mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
+          this.particle.setPosition([ 0, 0, 0]);
           this.resetCounter = 0;
           return
         };
@@ -142,12 +153,12 @@ define(function(require, exports, module) {
 
     var wraparound = function(thing) {
       if ( (thing.particle.getPosition()[0]) >= (window.innerWidth / 2) ) {
-        thing.particle.setPosition([- window.innerWidth / 2, thing.particle.getPosition()[1], 0]);
-      } else if ( (thing.particle.getPosition()[0]) <= (- window.innerWidth / 2) ) {
+        thing.particle.setPosition([-window.innerWidth / 2, thing.particle.getPosition()[1], 0]);
+      } else if ( (thing.particle.getPosition()[0]) <= (-window.innerWidth / 2) ) {
         thing.particle.setPosition([window.innerWidth / 2, thing.particle.getPosition()[1], 0]);
       } else if ( (thing.particle.getPosition()[1]) >= (window.innerHeight / 2) ) {
         thing.particle.setPosition([thing.particle.getPosition()[0], (-window.innerHeight / 2), 0]);
-      } else if ( (thing.particle.getPosition()[1]) <= (- window.innerHeight / 2) ) {
+      } else if ( (thing.particle.getPosition()[1]) <= (-window.innerHeight / 2) ) {
         thing.particle.setPosition([thing.particle.getPosition()[0], window.innerHeight / 2, 0]);
       };
     };
