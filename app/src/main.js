@@ -1,6 +1,6 @@
 /* -------- famo.us setup -------- */
 define(function(require, exports, module) {
-    'use strict';
+    // 'use strict';
     // import dependencies
     var Engine = require('famous/core/Engine');
     var Modifier = require('famous/core/Modifier');
@@ -38,10 +38,6 @@ define(function(require, exports, module) {
         size:[52,52],
         content: '/content/images/AsteroidsShip_color.gif'
       });
-      this.explosion = new ImageSurface({
-        size:[100,100],
-        content: 'content/images/graphics-explosions-once.gif'
-      });
       this.state = new StateModifier({
         align: [0.5,0.5],
         origin: [0.5,0.5]
@@ -49,38 +45,46 @@ define(function(require, exports, module) {
       this.particle = new Circle({radius:20});
       this.direction = 0.0; //radians
       this.rotationModifier = function() {
-        if (this.collision.allowRotation) {
-          return new StateModifier({ transform: Transform.rotateZ(this.direction) });
-        }
+        return new StateModifier({ transform: Transform.rotateZ(this.direction) });
       };
       this.addVector = function() {
-        if (this.collision.allowAddVector) {
-          var XToAdd = 0.1 * Math.cos(this.direction);
-          var YToAdd = 0.1 * Math.sin(this.direction);
-          var currentX = this.particle.getVelocity()[0];
-          var currentY = this.particle.getVelocity()[1];
-          var newX = currentX + XToAdd;
-          var newY = currentY + YToAdd;
-          this.particle.setVelocity([newX, newY, 0]);
-        }
+        var XToAdd = 0.1 * Math.cos(this.direction);
+        var YToAdd = 0.1 * Math.sin(this.direction);
+        var currentX = this.particle.getVelocity()[0];
+        var currentY = this.particle.getVelocity()[1];
+        var newX = currentX + XToAdd;
+        var newY = currentY + YToAdd;
+        this.particle.setVelocity([newX, newY, 0]);
       };
       this.collision = new Collision();
-      this.collision.allowRotation = true;
-      this.collision.allowAddVector = true;
+      this.collision.alive = true;
+      this.collision.explosion = new ImageSurface({
+        size:[100,100],
+        content: 'content/images/graphics-explosions-210621.gif'
+      });
+      // these next 4 are duplicates passed to collision handler
       this.collision.particle = this.particle;
       this.collision.state = this.state;
       this.collision.surface = this.surface;
-      this.collision.explosion = this.explosion;
       this.collision.on('postCollision', function() {
         this.particle.setVelocity([0,0,0]);
-        this.allowAddVector = false;
-        this.allowRotation = false;
+        this.alive = false;
         mainCon.add(this.state).add(this.explosion);
       });
+      this.resetCounter = 0;
       this.resetShip = function() {
-        this.collision.allowAddVector = false;
-        this.collision.allowRotation = false;
-        mainCon.add(this.state).add(this.surface);
+        this.resetCounter += 1;
+        if (this.resetCounter === 180) {
+          this.collision.alive = true;
+          // this.particle.setPosition([ window.innerWidth / 2, window.innerHeight /2, 0]);
+          mainCon.add(this.state).add(this.surface);
+          this.resetCounter = 0;
+          return
+        };
+        console.log(this.resetCounter);
+        // this.collision.alive = true;
+        // this.particle.setPosition([ window.innerWidth / 2, window.innerHeight /2, 0]);
+        // mainCon.add(this.state).add(this.surface);
       };
       physicsEng.addBody(this.particle);
       shipArray.push(this);
@@ -130,13 +134,13 @@ define(function(require, exports, module) {
     /* --------- player controls -------- */
 
     Engine.on('keydown', function(e) {
-      if (e.which === 65) {
+      if (e.which === 65 && ship0.collision.alive) {
         ship0.direction -= Math.PI / 20;
         mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
-      } else if (e.which === 68) {
+      } else if (e.which === 68 && ship0.collision.alive)  {
         ship0.direction += Math.PI / 20;
         mainCon.add(ship0.state).add(ship0.rotationModifier()).add(ship0.surface);
-      } else if (e.which === 87) {
+      } else if (e.which === 87 && ship0.collision.alive) {
         ship0.addVector();
       };
     });
@@ -171,6 +175,9 @@ define(function(require, exports, module) {
         magnitudeLimit(shipArray[i], 1);
         shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
         wraparound(shipArray[i]);
+        if (shipArray[i].collision.alive === false) {
+          shipArray[i].resetShip();
+        }
       };
       for (var i=0; i < asteroidArray.length; i++) {
         magnitudeLimit(asteroidArray[i], 1);
