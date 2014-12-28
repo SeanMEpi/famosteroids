@@ -68,7 +68,7 @@ define(function(require, exports, module) {
       this.collision = new Collision();
       this.collision.alive = true;
       this.collision.shield = false;
-      this.shieldCounter = 180;
+      this.resetCounter = 0;
       this.collision.explosion = function() {
         return new ImageSurface({
           size:[100,100],
@@ -96,7 +96,16 @@ define(function(require, exports, module) {
           mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
         };
       });
-      this.resetCounter = 0;
+      this.allowShield = true;
+      this.shieldCounter = 0;
+      this.shieldTimer = function(value) {
+        this.shieldCounter  += value;
+        if (this.shieldCounter >= 1800) {
+          this.shieldCounter = 1800;
+          this.shieldOff();
+          this.allowShield = false;
+        };
+      };
       this.shieldOn = function() {
         this.currentSurface = this.shipWithShield;
         mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
@@ -185,12 +194,14 @@ define(function(require, exports, module) {
 
     var resetShip = function(ship) {
       ship.resetCounter += 1;
-      if (ship.resetCounter === 180) {
+      if (ship.resetCounter >= 180) {
         ship.collision.alive = true;
         ship.direction = 3 * Math.PI / 2;
         mainCon.add(ship.state).add(ship.rotationModifier()).add(ship.surface);
         ship.particle.setPosition([ 0, 0, 0]);
         ship.resetCounter = 0;
+        ship.shieldCounter = 0;
+        ship.allowShield = true;
         return
       };
     };
@@ -216,9 +227,19 @@ define(function(require, exports, module) {
         if (keyState[87] && shipArray[i].collision.alive) {
           shipArray[i].addVector();
         };
-        if (keyState[79] && shipArray[i].collision.alive) {
+        // if shield is not on, shield time remains and button is pressed, enable it
+        if (keyState[79] && shipArray[i].collision.alive && !shipArray[i].collision.shield && shipArray[i].allowShield) {
           shipArray[i].shieldOn();
         };
+        //if shield is on and button is released, disable it
+        if (!keyState[79] && shipArray[i].collision.shield) {
+          shipArray[i].shieldOff();
+        };
+        //if shield is on, increment shield disable timer
+        if (shipArray[i].collision.shield) {
+          shipArray[i].shieldTimer(10);
+        };
+
       };
 
       for (var i=0; i < asteroidArray.length; i++) {
