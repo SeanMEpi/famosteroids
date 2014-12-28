@@ -42,6 +42,11 @@ define(function(require, exports, module) {
         size:[52,52],
         content: '/content/images/ship_2.png'
       });
+      this.shipWithShield = new ImageSurface({
+        size:[52,52],
+        content: '/content/images/ship_2_shields.png'
+      });
+      this.currentSurface = this.surface;
       this.state = new StateModifier({
         align: [0.5,0.5],
         origin: [0.5,0.5]
@@ -62,6 +67,8 @@ define(function(require, exports, module) {
       };
       this.collision = new Collision();
       this.collision.alive = true;
+      this.collision.shield = false;
+      this.shieldCounter = 180;
       this.collision.explosion = function() {
         return new ImageSurface({
           size:[100,100],
@@ -70,29 +77,35 @@ define(function(require, exports, module) {
       };
       this.collision.explosionStateMod = new StateModifier({
          transform: Transform.translate(0, 0, -1)
-      })
-      // these next 4 are duplicates passed to collision handler
+      });
+      this.collision.agentIDs = [];
+      this.attach = function(arrayToAttach) {
+        for (var i=0; i < arrayToAttach.length; i++) {
+          this.collision.agentIDs.push(physicsEng.attach(this.collision, arrayToAttach[i].particle, this.particle));
+        };
+      };
+      // these next 3 are duplicates passed to collision handler
       this.collision.particle = this.particle;
       this.collision.state = this.state;
       this.collision.surface = this.surface;
       this.collision.on('postCollision', function() {
-        this.particle.setVelocity([0,0,0]);
-
-        this.alive = false;
-        explosionDisplay = this.explosion();
-        mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
+        if (this.shield === false) {
+          this.particle.setVelocity([0,0,0]);
+          this.alive = false;
+          explosionDisplay = this.explosion();
+          mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
+        };
       });
       this.resetCounter = 0;
-      this.resetShip = function() {
-        this.resetCounter += 1;
-        if (this.resetCounter === 180) {
-          this.collision.alive = true;
-          this.direction = 3 * Math.PI / 2;
-          mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
-          this.particle.setPosition([ 0, 0, 0]);
-          this.resetCounter = 0;
-          return
-        };
+      this.shieldOn = function() {
+        this.currentSurface = this.shipWithShield;
+        mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
+        this.collision.shield = true;
+      };
+      this.shieldOff = function() {
+        this.currentSurface = this.surface;
+        mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
+        this.collision.shield = false;
       };
       physicsEng.addBody(this.particle);
       shipArray.push(this);
@@ -111,7 +124,7 @@ define(function(require, exports, module) {
         align: [0.5, 0.5],
         origin: [0.5, 0.5]
       });
-      this.particle = new Circle({radius:45});
+      this.particle = new Circle({radius:35});
       this.direction = 0.0; //radians
       this.rotationModifier = function() {
         return new StateModifier({ transform: Transform.rotateZ(this.direction) });
@@ -126,9 +139,6 @@ define(function(require, exports, module) {
         this.particle.setVelocity([newX, newY, 0]);
       };
       physicsEng.addBody(this.particle);
-      for (var i=0; i< shipArray.length; i++) {
-        physicsEng.attach(shipArray[i].collision, shipArray[i].particle, this.particle);
-      };
       asteroidArray.push(this);
       mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
       var randomDirection = Random.range(0, 2 * Math.PI);
@@ -172,6 +182,18 @@ define(function(require, exports, module) {
       }
     };
 
+    var resetShip = function(ship) {
+      ship.resetCounter += 1;
+      if (ship.resetCounter === 180) {
+        ship.collision.alive = true;
+        ship.direction = 3 * Math.PI / 2;
+        mainCon.add(ship.state).add(ship.rotationModifier()).add(ship.surface);
+        ship.particle.setPosition([ 0, 0, 0]);
+        ship.resetCounter = 0;
+        return
+      };
+    };
+
     /* -------- main event loop -------- */
 
     Timer.every( function() {
@@ -180,18 +202,21 @@ define(function(require, exports, module) {
         shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
         wraparound(shipArray[i]);
         if (shipArray[i].collision.alive === false) {
-          shipArray[i].resetShip();
+          resetShip(shipArray[i]);
         };
         if (keyState[65] && shipArray[i].collision.alive) {
         shipArray[i].direction -= Math.PI / 32;
-        mainCon.add(shipArray[i].state).add(shipArray[i].rotationModifier()).add(shipArray[i].surface);
+        mainCon.add(shipArray[i].state).add(shipArray[i].rotationModifier()).add(shipArray[i].currentSurface);
         };
         if (keyState[68] && shipArray[i].collision.alive) {
           shipArray[i].direction += Math.PI / 32;
-          mainCon.add(shipArray[i].state).add(shipArray[i].rotationModifier()).add(shipArray[i].surface);
+          mainCon.add(shipArray[i].state).add(shipArray[i].rotationModifier()).add(shipArray[i].currentSurface);
         };
         if (keyState[87] && shipArray[i].collision.alive) {
           shipArray[i].addVector();
+        };
+        if (keyState[79] && shipArray[i].collision.alive) {
+          shipArray[i].shieldOn();
         };
       };
 
@@ -212,5 +237,7 @@ define(function(require, exports, module) {
     var ast2 = new Asteroid();
     var ast3 = new Asteroid();
     var ast4 = new Asteroid();
+
+    ship0.attach(asteroidArray);
 
 });
