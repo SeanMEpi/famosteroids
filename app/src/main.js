@@ -44,7 +44,7 @@ define(function(require, exports, module) {
       });
       this.shipWithShield = new ImageSurface({
         size:[52,52],
-        content: '/content/images/ship_2_shields.png'
+        content: '/content/images/ship_3_shields.png'
       });
       this.currentSurface = this.surface;
       this.state = new StateModifier({
@@ -125,6 +125,7 @@ define(function(require, exports, module) {
         origin: [0.5, 0.5]
       });
       this.particle = new Circle({radius:35});
+      this.particle.setMass(8);
       this.direction = 0.0; //radians
       this.rotationModifier = function() {
         return new StateModifier({ transform: Transform.rotateZ(this.direction) });
