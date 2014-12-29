@@ -191,7 +191,7 @@ define(function(require, exports, module) {
       this.direction = firer.direction;
       this.addVector = function(amount) {
         // calculate magnitude of firer
-        // add starting magnitude of torpedo
+        // add starting magnitude of torpedo (amount)
         // get direction (rotational, not current vector)
         // set velocity based on above
         var XToAdd = amount * Math.cos(this.direction);
@@ -236,8 +236,9 @@ define(function(require, exports, module) {
         if (this.timeToLive <= 0) {
           this.particle.setVelocity([0,0,0]);
           this.alive = false;
-          this.currentSurface = this.deadTorpedo;
-          mainCon.add(this.state).add(this.currentSurface);
+          this.currentSurface = null;
+          this.torpedoSurface.render = function(){ return null; };
+          return 'remove';
         };
       };
       physicsEng.addBody(this.particle);
@@ -343,7 +344,9 @@ define(function(require, exports, module) {
       for (var i=0; i < torpedoArray.length; i++) {
         torpedoArray[i].state.setTransform(torpedoArray[i].particle.getTransform());
         wraparound(torpedoArray[i]);
-        torpedoArray[i].lifeCounter(-1);
+        if (torpedoArray[i].lifeCounter(-1) === 'remove') {
+          torpedoArray.splice(torpedoArray[i],1);
+        }
       };
 
     }, 1);
