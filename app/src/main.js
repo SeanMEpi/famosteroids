@@ -36,9 +36,9 @@ define(function(require, exports, module) {
     /* ------- ship setup -------- */
 
     var shipArray = [];
-
     var Ship = function Ship() {
-      this.surface = new ImageSurface({
+      //surface setup
+      this.shipSurface = new ImageSurface({
         size:[52,52],
         content: '/content/images/ship_2.png'
       });
@@ -46,7 +46,8 @@ define(function(require, exports, module) {
         size:[52,52],
         content: '/content/images/ship_3_shields.png'
       });
-      this.currentSurface = this.surface;
+      this.currentSurface = this.shipSurface;
+      // ocation & movement setup
       this.state = new StateModifier({
         align: [0.5,0.5],
         origin: [0.5,0.5]
@@ -65,6 +66,7 @@ define(function(require, exports, module) {
         var newY = currentY + YToAdd;
         this.particle.setVelocity([newX, newY, 0]);
       };
+      //collision setup
       this.collision = new Collision();
       this.collision.alive = true;
       this.collision.shield = false;
@@ -84,7 +86,6 @@ define(function(require, exports, module) {
           this.collision.agentIDs.push(physicsEng.attach(this.collision, arrayToAttach[i].particle, this.particle));
         };
       };
-      // these next 3 are duplicates passed to collision handler
       this.collision.particle = this.particle;
       this.collision.state = this.state;
       this.collision.surface = this.surface;
@@ -96,6 +97,7 @@ define(function(require, exports, module) {
           mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
         };
       });
+      // shield setup
       this.allowShield = true;
       this.shieldCounter = 0;
       this.shieldTimer = function(value) {
@@ -112,13 +114,14 @@ define(function(require, exports, module) {
         this.collision.shield = true;
       };
       this.shieldOff = function() {
-        this.currentSurface = this.surface;
+        this.currentSurface = this.shipSurface;
         mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
         this.collision.shield = false;
       };
+      //add ship to physics and game field
       physicsEng.addBody(this.particle);
       shipArray.push(this);
-      mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
+      mainCon.add(this.state).add(this.rotationModifier()).add(this.shipSurface);
     };
 
     /* -------- Asteroid Setup -------- */
@@ -159,6 +162,91 @@ define(function(require, exports, module) {
       this.particle.setPosition([ randomX, randomY, 0]);
     };
 
+    /* -------- Torpedo Setup -------- */
+
+    var torpedoArray = [];
+    var Torpedo = function Torpedo(firer) {
+      //surface setup
+      this.torpedoSurface = new Surface ({
+        size: [10,10],
+        properties: {
+          backgroundColor: '#63C7DB',
+          borderRadius: '200px'
+        }
+      });
+      this.deadTorpedo = new Surface ({
+        size: [10,10],
+        properties: {
+          backgroundColor: '#030303',
+          borderRadius: '200px'
+        }
+      });
+      this.currentSurface = this.torpedoSurface;
+      // location & movement setup
+      this.state = new StateModifier({
+        align: [0.5,0.5],
+        origin: [0.5,0.5]
+      });
+      this.particle = new Circle({radius:10});
+      this.direction = firer.direction;
+      this.addVector = function(amount) {
+        // calculate magnitude of firer
+        // add starting magnitude of torpedo
+        // get direction (rotational, not current vector)
+        // set velocity based on above
+        var XToAdd = amount * Math.cos(this.direction);
+        var YToAdd = amount * Math.sin(this.direction);
+        var currentX = this.particle.getVelocity()[0];
+        var currentY = this.particle.getVelocity()[1];
+        var newX = currentX + XToAdd;
+        var newY = currentY + YToAdd;
+        this.particle.setVelocity([newX, newY, 0]);
+      };
+      //collision setup
+      this.collision = new Collision();
+      this.collision.alive = true;
+      this.resetCounter = 0;
+      this.collision.explosion = function() {
+        return new ImageSurface({
+          size:[100,100],
+          content: 'content/images/graphics-explosions-210621.gif'
+        });
+      };
+      this.collision.explosionStateMod = new StateModifier({
+         transform: Transform.translate(0, 0, -1)
+      });
+      this.collision.agentIDs = [];
+      this.attach = function(arrayToAttach) {
+        for (var i=0; i < arrayToAttach.length; i++) {
+          this.collision.agentIDs.push(physicsEng.attach(this.collision, arrayToAttach[i].particle, this.particle));
+        };
+      };
+      this.collision.particle = this.particle;
+      this.collision.state = this.state;
+      this.collision.surface = this.surface;
+      this.collision.on('postCollision', function() {
+          this.particle.setVelocity([0,0,0]);
+          this.alive = false;
+          explosionDisplay = this.explosion();
+          mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
+      });
+      this.timeToLive = 120;
+      this.lifeCounter = function(amount) {
+        this.timeToLive += amount;
+        if (this.timeToLive <= 0) {
+          this.particle.setVelocity([0,0,0]);
+          this.alive = false;
+          this.currentSurface = this.deadTorpedo;
+          mainCon.add(this.state).add(this.currentSurface);
+        };
+      };
+      physicsEng.addBody(this.particle);
+      torpedoArray.push(this);
+      this.particle.setPosition([firer.particle.getPosition()[0],firer.particle.getPosition()[1],0]);
+      mainCon.add(this.state).add(this.currentSurface);
+      this.addVector(.2);
+    };
+
     /* --------- keystate register for player controls -------- */
 
     var keyState = {};
@@ -197,11 +285,12 @@ define(function(require, exports, module) {
       if (ship.resetCounter >= 180) {
         ship.collision.alive = true;
         ship.direction = 3 * Math.PI / 2;
-        mainCon.add(ship.state).add(ship.rotationModifier()).add(ship.surface);
+        mainCon.add(ship.state).add(ship.rotationModifier()).add(ship.shipSurface);
         ship.particle.setPosition([ 0, 0, 0]);
         ship.resetCounter = 0;
         ship.shieldCounter = 0;
         ship.allowShield = true;
+        keyState[79] = true; // turn shield on
         return
       };
     };
@@ -239,13 +328,22 @@ define(function(require, exports, module) {
         if (shipArray[i].collision.shield) {
           shipArray[i].shieldTimer(10);
         };
-
+        //fire torpedo
+        if (keyState[76]) {
+          newTorpedo = new Torpedo(shipArray[i],asteroidArray);
+        };
       };
 
       for (var i=0; i < asteroidArray.length; i++) {
         magnitudeLimit(asteroidArray[i], 1);
         asteroidArray[i].state.setTransform(asteroidArray[i].particle.getTransform());
         wraparound(asteroidArray[i]);
+      };
+
+      for (var i=0; i < torpedoArray.length; i++) {
+        torpedoArray[i].state.setTransform(torpedoArray[i].particle.getTransform());
+        wraparound(torpedoArray[i]);
+        torpedoArray[i].lifeCounter(-1);
       };
 
     }, 1);
@@ -261,5 +359,6 @@ define(function(require, exports, module) {
     var ast4 = new Asteroid();
 
     ship0.attach(asteroidArray);
+    keyState[79] = true;  // begin with shield on
 
 });
