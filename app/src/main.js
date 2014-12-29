@@ -40,7 +40,7 @@ define(function(require, exports, module) {
       //surface setup
       this.shipSurface = new ImageSurface({
         size:[52,52],
-        content: '/content/images/ship_2.png'
+        content: '/content/images/ship_4.png'
       });
       this.shipWithShield = new ImageSurface({
         size:[52,52],
@@ -65,6 +65,10 @@ define(function(require, exports, module) {
         var newX = currentX + XToAdd;
         var newY = currentY + YToAdd;
         this.particle.setVelocity([newX, newY, 0]);
+      };
+      this.getMagnitude = function() {
+        return Math.sqrt((this.particle.getVelocity()[0] * this.particle.getVelocity()[0]) +
+                         (this.particle.getVelocity()[1] * this.particle.getVelocity()[1]));
       };
       //collision setup
       this.collision = new Collision();
@@ -118,6 +122,7 @@ define(function(require, exports, module) {
         mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
         this.collision.shield = false;
       };
+      this.torpTimer = 5;
       //add ship to physics and game field
       physicsEng.addBody(this.particle);
       shipArray.push(this);
@@ -165,7 +170,7 @@ define(function(require, exports, module) {
     /* -------- Torpedo Setup -------- */
 
     var torpedoArray = [];
-    var Torpedo = function Torpedo(firer) {
+    var Torpedo = function Torpedo(firer, asteroids) {
       //surface setup
       this.torpedoSurface = new Surface ({
         size: [10,10],
@@ -230,7 +235,7 @@ define(function(require, exports, module) {
           explosionDisplay = this.explosion();
           mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
       });
-      this.timeToLive = 120;
+      this.timeToLive = 60;
       this.lifeCounter = function(amount) {
         this.timeToLive += amount;
         if (this.timeToLive <= 0) {
@@ -245,7 +250,8 @@ define(function(require, exports, module) {
       torpedoArray.push(this);
       this.particle.setPosition([firer.particle.getPosition()[0],firer.particle.getPosition()[1],0]);
       mainCon.add(this.state).add(this.currentSurface);
-      this.addVector(.2);
+      this.particle.setVelocity([firer.particle.getVelocity()[0],firer.particle.getVelocity()[1],0]);
+      this.addVector(0.5);
     };
 
     /* --------- keystate register for player controls -------- */
@@ -329,9 +335,13 @@ define(function(require, exports, module) {
         if (shipArray[i].collision.shield) {
           shipArray[i].shieldTimer(10);
         };
-        //fire torpedo
-        if (keyState[76]) {
+        //allow torpedo fire every 5 frames if torpedos in play < 6
+        if (shipArray[i].torpTimer > 0) {
+          shipArray[i].torpTimer -= 1;
+        };
+        if ((keyState[76]) && (torpedoArray.length < 6) && (shipArray[i].torpTimer === 0)) {
           newTorpedo = new Torpedo(shipArray[i],asteroidArray);
+          shipArray[i].torpTimer = 5;
         };
       };
 
