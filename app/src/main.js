@@ -156,6 +156,32 @@ define(function(require, exports, module) {
         var newY = currentY + YToAdd;
         this.particle.setVelocity([newX, newY, 0]);
       };
+      //collision setup
+      this.collision = new Collision();
+      this.collision.alive = true;
+      this.resetCounter = 0;
+      this.collision.explosion = function() {
+        return new ImageSurface({
+          size:[100,100],
+          content: 'content/images/graphics-explosions-210621.gif'
+        });
+      };
+      this.collision.explosionStateMod = new StateModifier({
+         transform: Transform.translate(0, 0, -1)
+      });
+      this.collision.agentIDs = [];
+      this.attach = function(torpedo) {
+        this.collision.agentIDs.push(physicsEng.attach(this.collision, torpedo.particle, this.particle));
+      };
+      this.collision.particle = this.particle;
+      this.collision.state = this.state;
+      this.collision.surface = this.surface;
+      this.collision.on('postCollision', function() {
+        this.particle.setVelocity([0,0,0]);
+        this.alive = false;
+        explosionDisplay = this.explosion();
+        mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
+      });
       physicsEng.addBody(this.particle);
       asteroidArray.push(this);
       mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
@@ -246,6 +272,7 @@ define(function(require, exports, module) {
           return 'remove';
         };
       };
+
       physicsEng.addBody(this.particle);
       torpedoArray.push(this);
       this.particle.setPosition([firer.particle.getPosition()[0],firer.particle.getPosition()[1],0]);
@@ -302,6 +329,14 @@ define(function(require, exports, module) {
       };
     };
 
+    var breakupAsteroid = function(asteroid) {
+      asteroid.breakupCounter += 1;
+      if (asteroid.resetCounter > 30) {
+        asteroid.Surface.render = function(){ return null; };
+        return 'remove'
+      };
+    };
+
     /* -------- main event loop -------- */
 
     Timer.every( function() {
@@ -341,6 +376,9 @@ define(function(require, exports, module) {
         };
         if ((keyState[76]) && (torpedoArray.length < 6) && (shipArray[i].torpTimer === 0)) {
           newTorpedo = new Torpedo(shipArray[i],asteroidArray);
+          for (j=0; j < asteroidArray.length; j++) {
+            asteroidArray[j].attach(newTorpedo);
+          };
           shipArray[i].torpTimer = 5;
         };
       };
@@ -349,6 +387,11 @@ define(function(require, exports, module) {
         magnitudeLimit(asteroidArray[i], 1);
         asteroidArray[i].state.setTransform(asteroidArray[i].particle.getTransform());
         wraparound(asteroidArray[i]);
+        if (asteroidArray[i].collision.alive === false) {
+          if (breakupAsteroid(asteroidArray[i]) === 'remove') {
+            asteroidArray.splice(asteroidArray[i],1);
+          };
+        };
       };
 
       for (var i=0; i < torpedoArray.length; i++) {
@@ -356,7 +399,7 @@ define(function(require, exports, module) {
         wraparound(torpedoArray[i]);
         if (torpedoArray[i].lifeCounter(-1) === 'remove') {
           torpedoArray.splice(torpedoArray[i],1);
-        }
+        };
       };
 
     }, 1);
