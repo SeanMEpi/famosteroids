@@ -35,6 +35,50 @@ define(function(require, exports, module) {
 
     /* ------- ship setup -------- */
 
+    var Thing = function Thing() {
+      // NOTE: anything that is set to null here needs to be set in the inheritor!
+      this.currentSurface = null;
+      this.state = null;
+      this.particle = null;
+      this.direction = null;
+      this.rotationModifier = function() {
+        return new StateModifier({ transform: Transform.rotateZ(this.direction) });
+      };
+      this.addVector = function(amount) {
+        var XToAdd = amount * Math.cos(this.direction);
+        var YToAdd = amount * Math.sin(this.direction);
+        var currentX = this.particle.getVelocity()[0];
+        var currentY = this.particle.getVelocity()[1];
+        var newX = currentX + XToAdd;
+        var newY = currentY + YToAdd;
+        this.particle.setVelocity([newX, newY, 0]);
+      };
+      this.getMagnitude = function() {
+        return Math.sqrt((this.particle.getVelocity()[0] * this.particle.getVelocity()[0]) +
+                         (this.particle.getVelocity()[1] * this.particle.getVelocity()[1]));
+      };
+      this.collision = new Collision();
+      this.collision.alive = true;
+      this.collision.shield = false;
+      this.resetCounter = 0;
+      this.collision.explosion = null;
+      this.collision.explosionStateMod = new StateModifier({
+         transform: Transform.translate(0, 0, -1)
+      });
+      this.collision.agentIDs = [];
+      this.attach = function(arrayToAttach) {
+        for (var i=0; i < arrayToAttach.length; i++) {
+          this.collision.agentIDs.push(physicsEng.attach(this.collision, arrayToAttach[i].particle, this.particle));
+        };
+      };
+      this.attachOne = function(itemToAttach) {
+        this.collision.agentIDs.push(physicsEng.attach(this.collision, itemToAttach.particle, this.particle));
+      };
+      this.collision.particle = this.particle;
+      this.collision.state = this.state;
+      this.collision.surface = this.surface;
+    };
+
     var shipArray = [];
     var Ship = function Ship() {
       //surface setup
@@ -54,41 +98,13 @@ define(function(require, exports, module) {
       });
       this.particle = new Circle({radius:20});
       this.direction = 3 * Math.PI / 2; //radians
-      this.rotationModifier = function() {
-        return new StateModifier({ transform: Transform.rotateZ(this.direction) });
-      };
-      this.addVector = function() {
-        var XToAdd = 0.02 * Math.cos(this.direction);
-        var YToAdd = 0.02 * Math.sin(this.direction);
-        var currentX = this.particle.getVelocity()[0];
-        var currentY = this.particle.getVelocity()[1];
-        var newX = currentX + XToAdd;
-        var newY = currentY + YToAdd;
-        this.particle.setVelocity([newX, newY, 0]);
-      };
-      this.getMagnitude = function() {
-        return Math.sqrt((this.particle.getVelocity()[0] * this.particle.getVelocity()[0]) +
-                         (this.particle.getVelocity()[1] * this.particle.getVelocity()[1]));
-      };
+
       //collision setup
-      this.collision = new Collision();
-      this.collision.alive = true;
-      this.collision.shield = false;
-      this.resetCounter = 0;
       this.collision.explosion = function() {
         return new ImageSurface({
           size:[100,100],
           content: 'content/images/graphics-explosions-210621.gif'
         });
-      };
-      this.collision.explosionStateMod = new StateModifier({
-         transform: Transform.translate(0, 0, -1)
-      });
-      this.collision.agentIDs = [];
-      this.attach = function(arrayToAttach) {
-        for (var i=0; i < arrayToAttach.length; i++) {
-          this.collision.agentIDs.push(physicsEng.attach(this.collision, arrayToAttach[i].particle, this.particle));
-        };
       };
       this.collision.particle = this.particle;
       this.collision.state = this.state;
@@ -101,6 +117,7 @@ define(function(require, exports, module) {
           mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
         };
       });
+
       // shield setup
       this.allowShield = true;
       this.shieldCounter = 0;
@@ -123,11 +140,13 @@ define(function(require, exports, module) {
         this.collision.shield = false;
       };
       this.torpTimer = 5;
+
       //add ship to physics and game field
       physicsEng.addBody(this.particle);
       shipArray.push(this);
-      mainCon.add(this.state).add(this.rotationModifier()).add(this.shipSurface);
+      mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
     };
+    Ship.prototype = new Thing();
 
     /* -------- Asteroid Setup -------- */
 
@@ -137,6 +156,7 @@ define(function(require, exports, module) {
         size:[100,101],
         content: '/content/images/asteroid_2.png'
       });
+      this.currentSurface = this.surface;
       this.state = new StateModifier({
         align: [0.5, 0.5],
         origin: [0.5, 0.5]
@@ -144,31 +164,15 @@ define(function(require, exports, module) {
       this.particle = new Circle({radius:35});
       this.particle.setMass(8);
       this.direction = 0.0; //radians
-      this.rotationModifier = function() {
-        return new StateModifier({ transform: Transform.rotateZ(this.direction) });
-      };
-      this.addVector = function() {
-        var XToAdd = 0.1 * Math.cos(this.direction);
-        var YToAdd = 0.1 * Math.sin(this.direction);
-        var currentX = this.particle.getVelocity()[0];
-        var currentY = this.particle.getVelocity()[1];
-        var newX = currentX + XToAdd;
-        var newY = currentY + YToAdd;
-        this.particle.setVelocity([newX, newY, 0]);
-      };
+
       //collision setup
       this.collision = new Collision();
-      this.collision.alive = true;
-      this.resetCounter = 0;
       this.collision.explosion = function() {
         return new ImageSurface({
           size:[100,100],
           content: 'content/images/graphics-explosions-210621.gif'
         });
       };
-      this.collision.explosionStateMod = new StateModifier({
-         transform: Transform.translate(0, 0, -1)
-      });
       this.collision.agentIDs = [];
       this.attach = function(torpedo) {
         this.collision.agentIDs.push(physicsEng.attach(this.collision, torpedo.particle, this.particle));
@@ -182,16 +186,18 @@ define(function(require, exports, module) {
         explosionDisplay = this.explosion();
         mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
       });
+
       physicsEng.addBody(this.particle);
       asteroidArray.push(this);
-      mainCon.add(this.state).add(this.rotationModifier()).add(this.surface);
+      mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
       var randomDirection = Random.range(0, 2 * Math.PI);
       this.direction = randomDirection;
-      this.addVector();
+      this.addVector(0.1);
       var randomX = Random.integer(-window.innerWidth, window.innerWidth);
       var randomY = Random.integer(-window.innerHeight, window.innerHeight);
       this.particle.setPosition([ randomX, randomY, 0]);
     };
+    Asteroid.prototype = new Thing();
 
     /* -------- Torpedo Setup -------- */
 
@@ -220,19 +226,6 @@ define(function(require, exports, module) {
       });
       this.particle = new Circle({radius:10});
       this.direction = firer.direction;
-      this.addVector = function(amount) {
-        // calculate magnitude of firer
-        // add starting magnitude of torpedo (amount)
-        // get direction (rotational, not current vector)
-        // set velocity based on above
-        var XToAdd = amount * Math.cos(this.direction);
-        var YToAdd = amount * Math.sin(this.direction);
-        var currentX = this.particle.getVelocity()[0];
-        var currentY = this.particle.getVelocity()[1];
-        var newX = currentX + XToAdd;
-        var newY = currentY + YToAdd;
-        this.particle.setVelocity([newX, newY, 0]);
-      };
       //collision setup
       this.collision = new Collision();
       this.collision.alive = true;
@@ -247,11 +240,7 @@ define(function(require, exports, module) {
          transform: Transform.translate(0, 0, -1)
       });
       this.collision.agentIDs = [];
-      this.attach = function(arrayToAttach) {
-        for (var i=0; i < arrayToAttach.length; i++) {
-          this.collision.agentIDs.push(physicsEng.attach(this.collision, arrayToAttach[i].particle, this.particle));
-        };
-      };
+
       this.collision.particle = this.particle;
       this.collision.state = this.state;
       this.collision.surface = this.surface;
@@ -280,6 +269,7 @@ define(function(require, exports, module) {
       this.particle.setVelocity([firer.particle.getVelocity()[0],firer.particle.getVelocity()[1],0]);
       this.addVector(0.5);
     };
+    Torpedo.prototype = new Thing();
 
     /* --------- keystate register for player controls -------- */
 
@@ -356,7 +346,7 @@ define(function(require, exports, module) {
           mainCon.add(shipArray[i].state).add(shipArray[i].rotationModifier()).add(shipArray[i].currentSurface);
         };
         if (keyState[87] && shipArray[i].collision.alive) {
-          shipArray[i].addVector();
+          shipArray[i].addVector(0.02);
         };
         // if shield is not on, shield time remains and button is pressed, enable it
         if (keyState[79] && shipArray[i].collision.alive && !shipArray[i].collision.shield && shipArray[i].allowShield) {
