@@ -15,6 +15,8 @@ define(function(require, exports, module) {
     var Vector = require('famous/math/Vector');
     var Timer = require('famous/utilities/Timer');
     var Random = require('famous/math/Random');
+    var EventHandler = require('famous/core/EventHandler');
+
 
     /* -------- global setup -------- */
 
@@ -32,6 +34,8 @@ define(function(require, exports, module) {
     });
 
     mainCon.add(backgroundStateMod).add(background);
+
+
 
     /* ------- ship setup -------- */
 
@@ -99,6 +103,8 @@ define(function(require, exports, module) {
       this.particle = new Circle({radius:20});
       this.direction = 3 * Math.PI / 2; //radians
 
+      this.eventHandler = new EventHandler(); // test code
+      this.collision.eventHandler = this.eventHandler; //test code
       //collision setup
       this.collision.explosion = function() {
         return new ImageSurface({
@@ -115,6 +121,7 @@ define(function(require, exports, module) {
           this.alive = false;
           explosionDisplay = this.explosion();
           mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
+          this.eventHandler.emit('Hello'); // test code
         };
       });
 
@@ -327,6 +334,8 @@ define(function(require, exports, module) {
       };
     };
 
+
+
     /* -------- main event loop -------- */
 
     Timer.every( function() {
@@ -407,4 +416,11 @@ define(function(require, exports, module) {
     ship0.attach(asteroidArray);
     keyState[79] = true;  // begin with shield on
 
+    //begin test code of event subscriber
+    var testEventHandler = new EventHandler();
+    testEventHandler.subscribe(ship0.collision.eventHandler);
+    testEventHandler.on('Hello', function() {
+      console.log("Received Hello");
+    });
+    // end event sub test code
 });
