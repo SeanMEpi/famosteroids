@@ -148,6 +148,7 @@ define(function(require, exports, module) {
     };
   };
 
+  /* -------- Ship object -------- */
   var Ship = function Ship() {
     //surface setup
     this.defaultSurface = new ImageSurface({
@@ -166,12 +167,41 @@ define(function(require, exports, module) {
     this.particle = new Circle({
       radius:20,
     });
-    this.direction = 3 * Math.PI / 2; //face top of screen
+    this.direction = 3 * Math.PI / 2;
+    this.collisionCallback = function() {
+
+    };
+
+  };
+  Ship.prototype = new Thing();
+
+  /* -------- Asteroid object -------- */
+  var Asteroid = function Asteroid() {
+    this.defaultSurface = new ImageSurface({
+      size:[100,100],
+      content: '/content/images/asteroid_2.png'
+    });
+    // this.mediumSurface = new ImageSurface({
+    //   size:[50,50],
+    //   content: '/content/images/asteroid_2.png'
+    // });
+    // this.smallSurface = new ImageSurface({
+    //   size:[25,25],
+    //   content: '/content/images/asteroid_2.png'
+    // });
+    this.currentSurface = this.defaultSurface;
+    this.stateMod = new StateModifier({
+      align: [0.5, 0.5],
+      origin: [0.5, 0.5]
+    });
+    this.particle = new Circle({
+      radius:20,
+    });
     this.collisionCallback = function() {
 
     };
   };
-  Ship.prototype = new Thing();
+  Asteroid.prototype = new Thing();
 
   /* --------- keystate register for player controls -------- */
 
@@ -188,53 +218,80 @@ define(function(require, exports, module) {
   /* -------- main event loop -------- */
 
   Timer.every( function() {
-    for (var i=0; i < shipArray.length; i++) {
-      shipArray[i].magnitudeLimit(1);
-      shipArray[i].stateMod.setTransform(shipArray[i].particle.getTransform());
-      shipArray[i].wraparound();
-      // if (shipArray[i].collision.alive === false) {
-      //   resetShip(shipArray[i]);
+    for (var i=0; i < ships.length; i++) {
+      ships[i].magnitudeLimit(1);
+      ships[i].stateMod.setTransform(ships[i].particle.getTransform());
+      ships[i].wraparound();
+      // if (ships[i].collision.alive === false) {
+      //   resetShip(ships[i]);
       // };
-      if (keyState[65] /* && shipArray[i].collision.alive */) {
-      shipArray[i].direction -= Math.PI / 32;
-      mainCon.add(shipArray[i].stateMod).add(shipArray[i].rotationModifier()).add(shipArray[i].currentSurface);
+      if (keyState[65] /* && ships[i].collision.alive */) {
+      ships[i].direction -= Math.PI / 32;
+      mainCon.add(ships[i].stateMod).add(ships[i].rotationModifier()).add(ships[i].currentSurface);
       };
-      if (keyState[68] /* && shipArray[i].collision.alive */) {
-        shipArray[i].direction += Math.PI / 32;
-        mainCon.add(shipArray[i].stateMod).add(shipArray[i].rotationModifier()).add(shipArray[i].currentSurface);
+      if (keyState[68] /* && ships[i].collision.alive */) {
+        ships[i].direction += Math.PI / 32;
+        mainCon.add(ships[i].stateMod).add(ships[i].rotationModifier()).add(ships[i].currentSurface);
       };
-      if (keyState[87] /* && shipArray[i].collision.alive */) {
-        shipArray[i].addVector(0.02);
+      if (keyState[87] /* && ships[i].collision.alive */) {
+        ships[i].addVector(0.02);
       };
       // if shield is not on, shield time remains and button is pressed, enable it
-      // if (keyState[79] /* && shipArray[i].collision.alive */ && !shipArray[i].collision.shield && shipArray[i].allowShield) {
-      //   shipArray[i].shieldOn();
+      // if (keyState[79] /* && ships[i].collision.alive */ && !ships[i].collision.shield && ships[i].allowShield) {
+      //   ships[i].shieldOn();
       // };
       //if shield is on and button is released, disable it
-      // if (!keyState[79] && shipArray[i].collision.shield) {
-      //   shipArray[i].shieldOff();
+      // if (!keyState[79] && ships[i].collision.shield) {
+      //   ships[i].shieldOff();
       // };
       //if shield is on, increment shield disable timer
-      // if (shipArray[i].collision.shield) {
-      //   shipArray[i].shieldTimer(10);
+      // if (ships[i].collision.shield) {
+      //   ships[i].shieldTimer(10);
       // };
       //allow torpedo fire every 5 frames if torpedos in play < 6
-      // if (shipArray[i].torpTimer > 0) {
-      //   shipArray[i].torpTimer -= 1;
+      // if (ships[i].torpTimer > 0) {
+      //   ships[i].torpTimer -= 1;
       // };
-      // if ((keyState[76]) && (torpedoArray.length < 6) && (shipArray[i].torpTimer === 0)) {
-      //   newTorpedo = new Torpedo(shipArray[i],asteroidArray);
+      // if ((keyState[76]) && (torpedoArray.length < 6) && (ships[i].torpTimer === 0)) {
+      //   newTorpedo = new Torpedo(ships[i],asteroidArray);
       //   for (j=0; j < asteroidArray.length; j++) {
       //     asteroidArray[j].attach(newTorpedo);
       //   };
-      //   shipArray[i].torpTimer = 5;
+      //   ships[i].torpTimer = 5;
       // };
     };
+
+    for (var i=0; i < asteroids.length; i++) {
+        asteroids[i].magnitudeLimit(1);
+        asteroids[i].stateMod.setTransform(asteroids[i].particle.getTransform());
+        asteroids[i].wraparound();
+        // if (asteroids[i].collision.alive === false) {
+        //   if (breakupAsteroid(asteroids[i]) === 'remove') {
+        //     asteroids.splice(asteroids[i],1);
+        //   };
+        // };
+      };
+
   }, 1);
 
 
-  var shipArray = [];
+  var ships = [];
   var ship0 = new Ship();
-  ship0.addToGame(shipArray);
+  ship0.addToGame(ships);
+
+  var asteroids = [];
+  var asteroid0 = new Asteroid();
+  var asteroid1 = new Asteroid();
+  var asteroid2 = new Asteroid();
+  var asteroid3 = new Asteroid();
+
+  asteroid0.addToGame(asteroids);
+  asteroid0.setRandomPositionAndDirection(.1);
+  asteroid1.addToGame(asteroids);
+  asteroid1.setRandomPositionAndDirection(.1);
+  asteroid2.addToGame(asteroids);
+  asteroid2.setRandomPositionAndDirection(.1);
+  asteroid3.addToGame(asteroids);
+  asteroid3.setRandomPositionAndDirection(.1);
 
 });
