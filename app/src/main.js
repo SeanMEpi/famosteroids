@@ -1,426 +1,158 @@
 /* -------- famo.us setup -------- */
 define(function(require, exports, module) {
-    // 'use strict';
-    // import dependencies
-    var Engine = require('famous/core/Engine');
-    var Modifier = require('famous/core/Modifier');
-    var Transform = require('famous/core/Transform');
-    var ImageSurface = require('famous/surfaces/ImageSurface');
-    var Surface = require('famous/core/Surface');
-    var StateModifier = require('famous/modifiers/StateModifier');
-    var PhysicsEngine = require ('famous/physics/PhysicsEngine');
-    var Collision = require('famous/physics/constraints/Collision');
-    var Circle = require('famous/physics/bodies/Circle');
-    var Body = require('famous/physics/bodies/Body');
-    var Vector = require('famous/math/Vector');
-    var Timer = require('famous/utilities/Timer');
-    var Random = require('famous/math/Random');
-    var EventHandler = require('famous/core/EventHandler');
+  // 'use strict';
+  // import dependencies
+  var Engine = require('famous/core/Engine');
+  var Modifier = require('famous/core/Modifier');
+  var Transform = require('famous/core/Transform');
+  var ImageSurface = require('famous/surfaces/ImageSurface');
+  var Surface = require('famous/core/Surface');
+  var StateModifier = require('famous/modifiers/StateModifier');
+  var PhysicsEngine = require ('famous/physics/PhysicsEngine');
+  var Collision = require('famous/physics/constraints/Collision');
+  var Circle = require('famous/physics/bodies/Circle');
+  var Body = require('famous/physics/bodies/Body');
+  var Vector = require('famous/math/Vector');
+  var Timer = require('famous/utilities/Timer');
+  var Random = require('famous/math/Random');
+  var EventHandler = require('famous/core/EventHandler');
 
+  var mainCon = Engine.createContext();
+  var physicsEng = new PhysicsEngine();
+  var collision = new Collision();
 
-    /* -------- global setup -------- */
+  var background = new Surface({
+    size: [(window.innerWidth), (window.innerHeight)],
+    properties: {
+      backgroundColor: '#030303'
+    }
+  });
+  var backgroundStateMod = new StateModifier({
+    transform: Transform.translate(0,0,-10)
+  });
 
-    var mainCon = Engine.createContext();
-    var physicsEng = new PhysicsEngine();
+  mainCon.add(backgroundStateMod).add(background);
 
-    var background = new Surface({
-      size: [(window.innerWidth), (window.innerHeight)],
-      properties: {
-        backgroundColor: '#030303'
-      }
-    });
-    var backgroundStateMod = new StateModifier({
-      transform: Transform.translate(0,0,-2)
-    });
-
-    mainCon.add(backgroundStateMod).add(background);
-
-
-
-    /* ------- ship setup -------- */
-
-    var Thing = function Thing() {
-      // NOTE: anything that is set to null here needs to be set in the inheritor!
-      this.currentSurface = null;
-      this.state = null;
-      this.particle = null;
-      this.direction = null;
-      this.rotationModifier = function() {
-        return new StateModifier({ transform: Transform.rotateZ(this.direction) });
-      };
-      this.addVector = function(amount) {
-        var XToAdd = amount * Math.cos(this.direction);
-        var YToAdd = amount * Math.sin(this.direction);
-        var currentX = this.particle.getVelocity()[0];
-        var currentY = this.particle.getVelocity()[1];
-        var newX = currentX + XToAdd;
-        var newY = currentY + YToAdd;
-        this.particle.setVelocity([newX, newY, 0]);
-      };
-      this.getMagnitude = function() {
-        return Math.sqrt((this.particle.getVelocity()[0] * this.particle.getVelocity()[0]) +
-                         (this.particle.getVelocity()[1] * this.particle.getVelocity()[1]));
-      };
-      this.collision = new Collision();
-      this.collision.alive = true;
-      this.collision.shield = false;
-      this.resetCounter = 0;
-      this.collision.explosion = null;
-      this.collision.explosionStateMod = new StateModifier({
-         transform: Transform.translate(0, 0, -1)
-      });
-      this.collision.agentIDs = [];
-      this.attach = function(arrayToAttach) {
-        for (var i=0; i < arrayToAttach.length; i++) {
-          this.collision.agentIDs.push(physicsEng.attach(this.collision, arrayToAttach[i].particle, this.particle));
-        };
-      };
-      this.attachOne = function(itemToAttach) {
-        this.collision.agentIDs.push(physicsEng.attach(this.collision, itemToAttach.particle, this.particle));
-      };
-      this.collision.particle = this.particle;
-      this.collision.state = this.state;
-      this.collision.surface = this.surface;
+  var SpaceThing = function SpaceThing() {
+    this.defaultSurface = null;
+    this.currentSurface = null;
+    this.stateMod = null;
+    this.particle = null;
+    this.direction = null;
+    this.rotationModifier = function() {
+      return new StateModifier({ transform: Transform.rotateZ(this.direction) });
     };
-
-    var shipArray = [];
-    var Ship = function Ship() {
-      //surface setup
-      this.shipSurface = new ImageSurface({
-        size:[52,52],
-        content: '/content/images/ship_4.png'
-      });
-      this.shipWithShield = new ImageSurface({
-        size:[52,52],
-        content: '/content/images/ship_3_shields.png'
-      });
-      this.currentSurface = this.shipSurface;
-      // ocation & movement setup
-      this.state = new StateModifier({
-        align: [0.5,0.5],
-        origin: [0.5,0.5]
-      });
-      this.particle = new Circle({radius:20});
-      this.direction = 3 * Math.PI / 2; //radians
-
-      this.eventHandler = new EventHandler(); // test code
-      this.collision.eventHandler = this.eventHandler; //test code
-      //collision setup
-      this.collision.explosion = function() {
-        return new ImageSurface({
-          size:[100,100],
-          content: 'content/images/graphics-explosions-210621.gif'
-        });
-      };
-      this.collision.particle = this.particle;
-      this.collision.state = this.state;
-      this.collision.surface = this.surface;
-      this.collision.on('postCollision', function() {
-        if (this.shield === false) {
-          this.particle.setVelocity([0,0,0]);
-          this.alive = false;
-          explosionDisplay = this.explosion();
-          mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
-          this.eventHandler.emit('Hello'); // test code
-        };
-      });
-
-      // shield setup
-      this.allowShield = true;
-      this.shieldCounter = 0;
-      this.shieldTimer = function(value) {
-        this.shieldCounter  += value;
-        if (this.shieldCounter >= 1800) {
-          this.shieldCounter = 1800;
-          this.shieldOff();
-          this.allowShield = false;
-        };
-      };
-      this.shieldOn = function() {
-        this.currentSurface = this.shipWithShield;
-        mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
-        this.collision.shield = true;
-      };
-      this.shieldOff = function() {
-        this.currentSurface = this.shipSurface;
-        mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
-        this.collision.shield = false;
-      };
-      this.torpTimer = 5;
-
-      //add ship to physics and game field
-      physicsEng.addBody(this.particle);
-      shipArray.push(this);
-      mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
+    this.addVector = function(amount) {
+      var XToAdd = amount * Math.cos(this.direction);
+      var YToAdd = amount * Math.sin(this.direction);
+      var currentX = this.particle.getVelocity()[0];
+      var currentY = this.particle.getVelocity()[1];
+      var newX = currentX + XToAdd;
+      var newY = currentY + YToAdd;
+      this.particle.setVelocity([newX, newY, 0]);
     };
-    Ship.prototype = new Thing();
-
-    /* -------- Asteroid Setup -------- */
-
-    var asteroidArray = [];
-    var Asteroid = function Asteroid() {
-      this.surface = new ImageSurface({
-        size:[100,101],
-        content: '/content/images/asteroid_2.png'
-      });
-      this.currentSurface = this.surface;
-      this.state = new StateModifier({
-        align: [0.5, 0.5],
-        origin: [0.5, 0.5]
-      });
-      this.particle = new Circle({radius:35});
-      this.particle.setMass(8);
-      this.direction = 0.0; //radians
-
-      //collision setup
-      this.collision = new Collision();
-      this.collision.explosion = function() {
-        return new ImageSurface({
-          size:[100,100],
-          content: 'content/images/graphics-explosions-210621.gif'
-        });
-      };
-      this.collision.agentIDs = [];
-      this.attach = function(torpedo) {
-        this.collision.agentIDs.push(physicsEng.attach(this.collision, torpedo.particle, this.particle));
-      };
-      this.collision.particle = this.particle;
-      this.collision.state = this.state;
-      this.collision.surface = this.surface;
-      this.collision.on('postCollision', function() {
-        this.particle.setVelocity([0,0,0]);
-        this.alive = false;
-        explosionDisplay = this.explosion();
-        mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
-      });
-
-      physicsEng.addBody(this.particle);
-      asteroidArray.push(this);
-      mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
+    this.getMagnitude = function() {
+      return Math.sqrt((this.particle.getVelocity()[0] * this.particle.getVelocity()[0]) +
+                       (this.particle.getVelocity()[1] * this.particle.getVelocity()[1]));
+    };
+    this.setRandomPositionAndDirection = function(magnitude) {
       var randomDirection = Random.range(0, 2 * Math.PI);
       this.direction = randomDirection;
-      this.addVector(0.1);
+      this.addVector(magnitude);
       var randomX = Random.integer(-window.innerWidth, window.innerWidth);
       var randomY = Random.integer(-window.innerHeight, window.innerHeight);
       this.particle.setPosition([ randomX, randomY, 0]);
     };
-    Asteroid.prototype = new Thing();
 
-    /* -------- Torpedo Setup -------- */
-
-    var torpedoArray = [];
-    var Torpedo = function Torpedo(firer, asteroids) {
-      //surface setup
-      this.torpedoSurface = new Surface ({
-        size: [10,10],
-        properties: {
-          backgroundColor: '#63C7DB',
-          borderRadius: '200px'
-        }
-      });
-      this.deadTorpedo = new Surface ({
-        size: [10,10],
-        properties: {
-          backgroundColor: '#030303',
-          borderRadius: '200px'
-        }
-      });
-      this.currentSurface = this.torpedoSurface;
-      // location & movement setup
-      this.state = new StateModifier({
-        align: [0.5,0.5],
-        origin: [0.5,0.5]
-      });
-      this.particle = new Circle({radius:10});
-      this.direction = firer.direction;
-      //collision setup
+    /* -------- collision setup -------- */
+    this.collisions = [];
+    this.createCollision = function(itemToCollideWith) {
       this.collision = new Collision();
       this.collision.alive = true;
-      this.resetCounter = 0;
-      this.collision.explosion = function() {
-        return new ImageSurface({
-          size:[100,100],
-          content: 'content/images/graphics-explosions-210621.gif'
-        });
-      };
+      this.collision.shield = false;
+      this.resetCounter = 0; // used if SpaceThing should regenerate after a period of time, e.g. a player ship
+      this.collision.explosionSurface = new ImageSurface({
+        size:[100,100],
+        content: 'content/images/graphics-explosions-210621.gif'
+      });
       this.collision.explosionStateMod = new StateModifier({
-         transform: Transform.translate(0, 0, -1)
+        transform: Transform.translate(0, 0, -1)
       });
-      this.collision.agentIDs = [];
-
-      this.collision.particle = this.particle;
-      this.collision.state = this.state;
+      this.collision.itemToCollideWith = itemToCollideWith;
+      this.collision.agent = physicsEng.attach(this.collision, itemToCollideWith.particle, this.particle);
+      this.collision.hostItem = this;
       this.collision.surface = this.surface;
-      this.collision.on('postCollision', function() {
-          this.particle.setVelocity([0,0,0]);
-          this.alive = false;
-          explosionDisplay = this.explosion();
-          mainCon.add(this.state).add(this.explosionStateMod).add(explosionDisplay);
-      });
-      this.timeToLive = 60;
-      this.lifeCounter = function(amount) {
-        this.timeToLive += amount;
-        if (this.timeToLive <= 0) {
-          this.particle.setVelocity([0,0,0]);
-          this.alive = false;
-          this.currentSurface = null;
-          this.torpedoSurface.render = function(){ return null; };
-          return 'remove';
-        };
+      this.collision.on('postCollision', this.collisionCallback());
+      this.collisions.push(this.collision);
+    };
+    this.createCollisions = function(arrayOfItems) {
+      for (var i=0; i<arrayOfItems.length; i++) {
+        this.createCollision(arrayOfItems[i]);
       };
+    };
 
+    /* -------- shield setup -------- */
+    this.allowShield = true;
+    this.shieldCounter = 0;
+    this.shieldTimer = function(value) {
+      this.shieldCounter  += value;
+      if (this.shieldCounter >= 1800) {
+        this.shieldCounter = 1800;
+        this.shieldOff();
+        this.allowShield = false;
+      };
+    };
+    this.shieldOn = function() {
+      this.currentSurface = this.shipWithShield;
+      mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
+      this.collision.shield = true;
+    };
+    this.shieldOff = function() {
+      this.currentSurface = this.shipSurface;
+      mainCon.add(this.state).add(this.rotationModifier()).add(this.currentSurface);
+      this.collision.shield = false;
+    };
+
+    /* -------- add item to physics and playfield -------- */
+    this.addToGame = function(itemArray) {
       physicsEng.addBody(this.particle);
-      torpedoArray.push(this);
-      this.particle.setPosition([firer.particle.getPosition()[0],firer.particle.getPosition()[1],0]);
-      mainCon.add(this.state).add(this.currentSurface);
-      this.particle.setVelocity([firer.particle.getVelocity()[0],firer.particle.getVelocity()[1],0]);
-      this.addVector(0.5);
+      itemArray.push(this);
+      mainCon.add(this.stateMod).add(this.rotationModifier()).add(this.currentSurface);
     };
-    Torpedo.prototype = new Thing();
+  };
 
-    /* --------- keystate register for player controls -------- */
-
-    var keyState = {};
-    Engine.on('keydown',function(e){
-      keyState[e.keyCode || e.which] = true;
-    },true);
-    Engine.on('keyup',function(e){
-      keyState[e.keyCode || e.which] = false;
-    },true);
-
-    /* -------- utility functions -------- */
-
-    var wraparound = function(thing) {
-      if ( (thing.particle.getPosition()[0]) >= (window.innerWidth / 2) ) {
-        thing.particle.setPosition([-window.innerWidth / 2, thing.particle.getPosition()[1], 0]);
-      } else if ( (thing.particle.getPosition()[0]) <= (-window.innerWidth / 2) ) {
-        thing.particle.setPosition([window.innerWidth / 2, thing.particle.getPosition()[1], 0]);
-      } else if ( (thing.particle.getPosition()[1]) >= (window.innerHeight / 2) ) {
-        thing.particle.setPosition([thing.particle.getPosition()[0], (-window.innerHeight / 2), 0]);
-      } else if ( (thing.particle.getPosition()[1]) <= (-window.innerHeight / 2) ) {
-        thing.particle.setPosition([thing.particle.getPosition()[0], window.innerHeight / 2, 0]);
-      };
-    };
-
-    var magnitudeLimit = function(thing, maxMagnitude) {
-      var magnitude = Math.sqrt( ((thing.particle.getVelocity()[0]) * (thing.particle.getVelocity()[0])) + ((thing.particle.getVelocity()[1]) * (thing.particle.getVelocity()[1])) );
-      if (magnitude >= maxMagnitude) {
-        var xComponant = maxMagnitude * Math.cos(thing.direction);
-        var yComponant = maxMagnitude * Math.sin(thing.direction);
-        thing.particle.setVelocity([xComponant, yComponant, 0]);
-      }
-    };
-
-    var resetShip = function(ship) {
-      ship.resetCounter += 1;
-      if (ship.resetCounter >= 180) {
-        ship.collision.alive = true;
-        ship.direction = 3 * Math.PI / 2;
-        mainCon.add(ship.state).add(ship.rotationModifier()).add(ship.shipSurface);
-        ship.particle.setPosition([ 0, 0, 0]);
-        ship.resetCounter = 0;
-        ship.shieldCounter = 0;
-        ship.allowShield = true;
-        keyState[79] = true; // turn shield on
-        return
-      };
-    };
-
-    var breakupAsteroid = function(asteroid) {
-      asteroid.breakupCounter += 1;
-      if (asteroid.resetCounter > 30) {
-        asteroid.Surface.render = function(){ return null; };
-        return 'remove'
-      };
-    };
-
-
-
-    /* -------- main event loop -------- */
-
-    Timer.every( function() {
-      for (var i=0; i < shipArray.length; i++) {
-        magnitudeLimit(shipArray[i], 1);
-        shipArray[i].state.setTransform(shipArray[i].particle.getTransform());
-        wraparound(shipArray[i]);
-        if (shipArray[i].collision.alive === false) {
-          resetShip(shipArray[i]);
-        };
-        if (keyState[65] && shipArray[i].collision.alive) {
-        shipArray[i].direction -= Math.PI / 32;
-        mainCon.add(shipArray[i].state).add(shipArray[i].rotationModifier()).add(shipArray[i].currentSurface);
-        };
-        if (keyState[68] && shipArray[i].collision.alive) {
-          shipArray[i].direction += Math.PI / 32;
-          mainCon.add(shipArray[i].state).add(shipArray[i].rotationModifier()).add(shipArray[i].currentSurface);
-        };
-        if (keyState[87] && shipArray[i].collision.alive) {
-          shipArray[i].addVector(0.02);
-        };
-        // if shield is not on, shield time remains and button is pressed, enable it
-        if (keyState[79] && shipArray[i].collision.alive && !shipArray[i].collision.shield && shipArray[i].allowShield) {
-          shipArray[i].shieldOn();
-        };
-        //if shield is on and button is released, disable it
-        if (!keyState[79] && shipArray[i].collision.shield) {
-          shipArray[i].shieldOff();
-        };
-        //if shield is on, increment shield disable timer
-        if (shipArray[i].collision.shield) {
-          shipArray[i].shieldTimer(10);
-        };
-        //allow torpedo fire every 5 frames if torpedos in play < 6
-        if (shipArray[i].torpTimer > 0) {
-          shipArray[i].torpTimer -= 1;
-        };
-        if ((keyState[76]) && (torpedoArray.length < 6) && (shipArray[i].torpTimer === 0)) {
-          newTorpedo = new Torpedo(shipArray[i],asteroidArray);
-          for (j=0; j < asteroidArray.length; j++) {
-            asteroidArray[j].attach(newTorpedo);
-          };
-          shipArray[i].torpTimer = 5;
-        };
-      };
-
-      for (var i=0; i < asteroidArray.length; i++) {
-        magnitudeLimit(asteroidArray[i], 1);
-        asteroidArray[i].state.setTransform(asteroidArray[i].particle.getTransform());
-        wraparound(asteroidArray[i]);
-        if (asteroidArray[i].collision.alive === false) {
-          if (breakupAsteroid(asteroidArray[i]) === 'remove') {
-            asteroidArray.splice(asteroidArray[i],1);
-          };
-        };
-      };
-
-      for (var i=0; i < torpedoArray.length; i++) {
-        torpedoArray[i].state.setTransform(torpedoArray[i].particle.getTransform());
-        wraparound(torpedoArray[i]);
-        if (torpedoArray[i].lifeCounter(-1) === 'remove') {
-          torpedoArray.splice(torpedoArray[i],1);
-        };
-      };
-
-    }, 1);
-
-    /* -------- add objects to play screen -------- */
-
-    var ship0 = new Ship();
-
-    var ast0 = new Asteroid();
-    var ast1 = new Asteroid();
-    var ast2 = new Asteroid();
-    var ast3 = new Asteroid();
-    var ast4 = new Asteroid();
-
-    ship0.attach(asteroidArray);
-    keyState[79] = true;  // begin with shield on
-
-    //begin test code of event subscriber
-    var testEventHandler = new EventHandler();
-    testEventHandler.subscribe(ship0.collision.eventHandler);
-    testEventHandler.on('Hello', function() {
-      console.log("Received Hello");
+  var Ship = function Ship() {
+    //surface setup
+    this.defaultSurface = new ImageSurface({
+      size:[52,52],
+      content: '/content/images/ship_4.png'
     });
-    // end event sub test code
+    this.shipWithShield = new ImageSurface({
+      size:[52,52],
+      content: '/content/images/ship_3_shields.png'
+    });
+    this.currentSurface = this.defaultSurface;
+    this.stateMod = new StateModifier({
+      align: [0.5, 0.5],
+      origin: [0.5, 0.5]
+    });
+    this.particle = new Circle({
+      radius:20,
+    });
+    this.direction = 3 * Math.PI / 2; //face top of screen
+    this.collisionCallback = function() {
+
+    };
+  };
+  Ship.prototype = new SpaceThing();
+
+  var shipArray = [];
+  var ship0 = new Ship();
+  ship0.addToGame(shipArray);
+
+
+
+
 });
+
+
