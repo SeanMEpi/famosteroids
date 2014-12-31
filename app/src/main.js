@@ -33,7 +33,7 @@ define(function(require, exports, module) {
 
   mainCon.add(backgroundStateMod).add(background);
 
-  var SpaceThing = function SpaceThing() {
+  var Thing = function Thing() {
 
     /* -------- Surfaces & movement -------- */
     this.defaultSurface = null;
@@ -64,6 +64,25 @@ define(function(require, exports, module) {
       var randomX = Random.integer(-window.innerWidth, window.innerWidth);
       var randomY = Random.integer(-window.innerHeight, window.innerHeight);
       this.particle.setPosition([ randomX, randomY, 0]);
+    };
+    this.wraparound = function() {
+      if ( (this.particle.getPosition()[0]) >= (window.innerWidth / 2) ) {
+        this.particle.setPosition([-window.innerWidth / 2, this.particle.getPosition()[1], 0]);
+      } else if ( (this.particle.getPosition()[0]) <= (-window.innerWidth / 2) ) {
+        this.particle.setPosition([window.innerWidth / 2, this.particle.getPosition()[1], 0]);
+      } else if ( (this.particle.getPosition()[1]) >= (window.innerHeight / 2) ) {
+        this.particle.setPosition([this.particle.getPosition()[0], (-window.innerHeight / 2), 0]);
+      } else if ( (this.particle.getPosition()[1]) <= (-window.innerHeight / 2) ) {
+        this.particle.setPosition([this.particle.getPosition()[0], window.innerHeight / 2, 0]);
+      };
+    };
+    this.magnitudeLimit = function(maxMagnitude) {
+      var magnitude = Math.sqrt( ((this.particle.getVelocity()[0]) * (this.particle.getVelocity()[0])) + ((this.particle.getVelocity()[1]) * (this.particle.getVelocity()[1])) );
+      if (magnitude >= maxMagnitude) {
+        var xComponant = maxMagnitude * Math.cos(this.direction);
+        var yComponant = maxMagnitude * Math.sin(this.direction);
+        this.particle.setVelocity([xComponant, yComponant, 0]);
+      };
     };
 
     /* -------- collision -------- */
@@ -152,7 +171,67 @@ define(function(require, exports, module) {
 
     };
   };
-  Ship.prototype = new SpaceThing();
+  Ship.prototype = new Thing();
+
+  /* --------- keystate register for player controls -------- */
+
+  var keyState = {};
+  Engine.on('keydown',function(e){
+    keyState[e.keyCode || e.which] = true;
+  },true);
+  Engine.on('keyup',function(e){
+    keyState[e.keyCode || e.which] = false;
+  },true);
+
+  /* -------- utility functions -------- */
+
+  /* -------- main event loop -------- */
+
+  Timer.every( function() {
+    for (var i=0; i < shipArray.length; i++) {
+      shipArray[i].magnitudeLimit(1);
+      shipArray[i].stateMod.setTransform(shipArray[i].particle.getTransform());
+      shipArray[i].wraparound();
+      // if (shipArray[i].collision.alive === false) {
+      //   resetShip(shipArray[i]);
+      // };
+      if (keyState[65] /* && shipArray[i].collision.alive */) {
+      shipArray[i].direction -= Math.PI / 32;
+      mainCon.add(shipArray[i].stateMod).add(shipArray[i].rotationModifier()).add(shipArray[i].currentSurface);
+      };
+      if (keyState[68] /* && shipArray[i].collision.alive */) {
+        shipArray[i].direction += Math.PI / 32;
+        mainCon.add(shipArray[i].stateMod).add(shipArray[i].rotationModifier()).add(shipArray[i].currentSurface);
+      };
+      if (keyState[87] /* && shipArray[i].collision.alive */) {
+        shipArray[i].addVector(0.02);
+      };
+      // if shield is not on, shield time remains and button is pressed, enable it
+      // if (keyState[79] /* && shipArray[i].collision.alive */ && !shipArray[i].collision.shield && shipArray[i].allowShield) {
+      //   shipArray[i].shieldOn();
+      // };
+      //if shield is on and button is released, disable it
+      // if (!keyState[79] && shipArray[i].collision.shield) {
+      //   shipArray[i].shieldOff();
+      // };
+      //if shield is on, increment shield disable timer
+      // if (shipArray[i].collision.shield) {
+      //   shipArray[i].shieldTimer(10);
+      // };
+      //allow torpedo fire every 5 frames if torpedos in play < 6
+      // if (shipArray[i].torpTimer > 0) {
+      //   shipArray[i].torpTimer -= 1;
+      // };
+      // if ((keyState[76]) && (torpedoArray.length < 6) && (shipArray[i].torpTimer === 0)) {
+      //   newTorpedo = new Torpedo(shipArray[i],asteroidArray);
+      //   for (j=0; j < asteroidArray.length; j++) {
+      //     asteroidArray[j].attach(newTorpedo);
+      //   };
+      //   shipArray[i].torpTimer = 5;
+      // };
+    };
+  }, 1);
+
 
   var shipArray = [];
   var ship0 = new Ship();
