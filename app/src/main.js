@@ -34,6 +34,8 @@ define(function(require, exports, module) {
   mainCon.add(backgroundStateMod).add(background);
 
   var SpaceThing = function SpaceThing() {
+
+    /* -------- Surfaces & movement -------- */
     this.defaultSurface = null;
     this.currentSurface = null;
     this.stateMod = null;
@@ -64,7 +66,7 @@ define(function(require, exports, module) {
       this.particle.setPosition([ randomX, randomY, 0]);
     };
 
-    /* -------- collision setup -------- */
+    /* -------- collision -------- */
     this.collisions = [];
     this.createCollision = function(itemToCollideWith) {
       this.collision = new Collision();
@@ -91,7 +93,7 @@ define(function(require, exports, module) {
       };
     };
 
-    /* -------- shield setup -------- */
+    /* -------- shield -------- */
     this.allowShield = true;
     this.shieldCounter = 0;
     this.shieldTimer = function(value) {
@@ -113,11 +115,17 @@ define(function(require, exports, module) {
       this.collision.shield = false;
     };
 
-    /* -------- add item to physics and playfield -------- */
+    /* -------- add remove items -------- */
     this.addToGame = function(itemArray) {
+      this.currentSurface.render = function render() { return this.id; };
       physicsEng.addBody(this.particle);
       itemArray.push(this);
       mainCon.add(this.stateMod).add(this.rotationModifier()).add(this.currentSurface);
+    };
+    this.removeFromGame = function(itemArray, itemIndex) {
+      physicsEng.removeBody(this.particle);
+      this.currentSurface.render = function(){ return null; };
+      itemArray.slice(itemArray[itemIndex],1);
     };
   };
 
@@ -150,9 +158,4 @@ define(function(require, exports, module) {
   var ship0 = new Ship();
   ship0.addToGame(shipArray);
 
-
-
-
 });
-
-
