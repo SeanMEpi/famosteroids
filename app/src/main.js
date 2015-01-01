@@ -87,7 +87,7 @@ define(function(require, exports, module) {
 
     /* -------- collision -------- */
     this.collisions = [];
-    this.createCollision = function(itemToCollideWith) {
+    this.createCollision = function(itemToCollideWith, message) {
       this.collision = new Collision();
       this.collision.alive = true;
       this.collision.shield = false;
@@ -101,9 +101,18 @@ define(function(require, exports, module) {
       });
       this.collision.itemToCollideWith = itemToCollideWith;
       this.collision.agent = physicsEng.attach(this.collision, itemToCollideWith.particle, this.particle);
-      this.collision.hostItem = this;
+      this.collision.particle = this.particle;
+      this.collision.stateMod = this.stateMod;
       this.collision.surface = this.surface;
-      this.collision.on('postCollision', this.collisionCallback());
+      this.collision.message = message;
+      this.collision.eventHandler = new EventHandler();
+      this.collision.on('postCollision', function() {
+        this.particle.setVelocity([0,0,0]);
+        console.log(this.message);
+        this.eventHandler.emit(this.message);
+        this.currentSurface = this.explosionSurface;
+        mainCon.add(this.stateMod).add(this.explosionStateMod).add(this.currentSurface);
+      });
       this.collisions.push(this.collision);
     };
     this.createCollisions = function(arrayOfItems) {
@@ -168,10 +177,6 @@ define(function(require, exports, module) {
       radius:20,
     });
     this.direction = 3 * Math.PI / 2;
-    this.collisionCallback = function() {
-
-    };
-
   };
   Ship.prototype = new Thing();
 
@@ -274,7 +279,6 @@ define(function(require, exports, module) {
 
   }, 1);
 
-
   var ships = [];
   var ship0 = new Ship();
   ship0.addToGame(ships);
@@ -287,11 +291,18 @@ define(function(require, exports, module) {
 
   asteroid0.addToGame(asteroids);
   asteroid0.setRandomPositionAndDirection(.1);
-  asteroid1.addToGame(asteroids);
-  asteroid1.setRandomPositionAndDirection(.1);
-  asteroid2.addToGame(asteroids);
-  asteroid2.setRandomPositionAndDirection(.1);
-  asteroid3.addToGame(asteroids);
-  asteroid3.setRandomPositionAndDirection(.1);
+  // asteroid1.addToGame(asteroids);
+  // asteroid1.setRandomPositionAndDirection(.1);
+  // asteroid2.addToGame(asteroids);
+  // asteroid2.setRandomPositionAndDirection(.1);
+  // asteroid3.addToGame(asteroids);
+  // asteroid3.setRandomPositionAndDirection(.1);
 
+  ship0.createCollision(asteroid0, 'ship0 reset');
+
+  testEventHandler = new EventHandler();
+  testEventHandler.subscribe(ship0.collision.eventHandler);
+  testEventHandler.on('ship0 reset', function() {
+      console.log("Received ");
+  });
 });
