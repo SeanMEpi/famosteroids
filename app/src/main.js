@@ -19,7 +19,6 @@ define(function(require, exports, module) {
 
   var mainCon = Engine.createContext();
   var physicsEng = new PhysicsEngine();
-  var collision = new Collision();
 
   var background = new Surface({
     size: [(window.innerWidth), (window.innerHeight)],
@@ -33,9 +32,13 @@ define(function(require, exports, module) {
 
   mainCon.add(backgroundStateMod).add(background);
 
+  var broadcast = new EventHandler();
+
   var Thing = function Thing() {
 
     /* -------- Surfaces & movement -------- */
+    this.eventHandler = new EventHandler();
+    this.eventHandler.subscribe(broadcast);
     this.defaultSurface = null;
     this.currentSurface = null;
     this.stateMod = null;
@@ -86,40 +89,46 @@ define(function(require, exports, module) {
     };
 
     /* -------- collision -------- */
-    this.collisions = [];
-    this.createCollision = function(itemToCollideWith, message) {
-      this.collision = new Collision();
-      this.collision.alive = true;
-      this.collision.shield = false;
-      this.resetCounter = 0; // used if SpaceThing should regenerate after a period of time, e.g. a player ship
-      this.collision.explosionSurface = new ImageSurface({
-        size:[100,100],
-        content: 'content/images/graphics-explosions-210621.gif'
-      });
-      this.collision.explosionStateMod = new StateModifier({
-        transform: Transform.translate(0, 0, -1)
-      });
-      this.collision.itemToCollideWith = itemToCollideWith;
-      this.collision.agent = physicsEng.attach(this.collision, itemToCollideWith.particle, this.particle);
-      this.collision.particle = this.particle;
-      this.collision.stateMod = this.stateMod;
-      this.collision.surface = this.surface;
-      this.collision.message = message;
-      this.collision.eventHandler = new EventHandler();
-      this.collision.on('postCollision', function() {
-        this.particle.setVelocity([0,0,0]);
-        console.log(this.message);
-        this.eventHandler.emit(this.message);
-        this.currentSurface = this.explosionSurface;
-        mainCon.add(this.stateMod).add(this.explosionStateMod).add(this.currentSurface);
-      });
-      this.collisions.push(this.collision);
-    };
-    this.createCollisions = function(arrayOfItems) {
-      for (var i=0; i<arrayOfItems.length; i++) {
-        this.createCollision(arrayOfItems[i]);
-      };
-    };
+    // this.collisions = [];
+    // this.createCollision = function(itemToCollideWith, message) {
+    //   this.collision = new Collision();
+    //   this.collision.alive = true;
+    //   this.collision.shield = false;
+    //   this.collision.explosionSurface = new ImageSurface({
+    //     size:[100,100],
+    //     content: 'content/images/graphics-explosions-210621.gif'
+    //   });
+    //   this.collision.explosionStateMod = new StateModifier({
+    //     transform: Transform.translate(0, 0, -1)
+    //   });
+    //   this.collision.itemToCollideWith = itemToCollideWith;
+    //   this.collision.agent = physicsEng.attach(this.collision, itemToCollideWith.particle, this.particle);
+    //   this.collision.particle = this.particle;
+    //   this.collision.stateMod = this.stateMod;
+    //   this.collision.surface = this.surface;
+    //   this.collision.resetTimer = 0;
+    //   this.collision.countdown = function(increment) {
+    //     this.resetTimer = this.resetTimer + increment;
+    //   };
+    //   // this.collision.message = message;
+    //   // this.collision.eventHandler = new EventHandler();
+    //   // this.collision.on('collision', function() {
+    //   //   this.eventHandler.emit(this.message);
+    //   // });
+    //   this.collision.on('postCollision', function() {
+    //     this.particle.setVelocity([0,0,0]);
+    //     this.currentSurface = this.explosionSurface;
+    //     mainCon.add(this.stateMod).add(this.explosionStateMod).add(this.currentSurface);
+    //     this.alive = false;
+    //     this.resetTimer = 90;
+    //   });
+    //   this.collisions.push(this.collision);
+    // };
+    // this.createCollisions = function(arrayOfItems) {
+    //   for (var i=0; i<arrayOfItems.length; i++) {
+    //     this.createCollision(arrayOfItems[i]);
+    //   };
+    // };
 
     /* -------- shield -------- */
     this.allowShield = true;
@@ -144,16 +153,18 @@ define(function(require, exports, module) {
     };
 
     /* -------- add remove items -------- */
-    this.addToGame = function(itemArray) {
-      this.currentSurface.render = function render() { return this.id; };
-      physicsEng.addBody(this.particle);
-      itemArray.push(this);
-      mainCon.add(this.stateMod).add(this.rotationModifier()).add(this.currentSurface);
-    };
+
     this.removeFromGame = function(itemArray, itemIndex) {
       physicsEng.removeBody(this.particle);
       this.currentSurface.render = function(){ return null; };
       itemArray.slice(itemArray[itemIndex],1);
+    };
+    this.reset = function() {
+      this.particle.setPosition([0,0,0]);
+      this.direction = 3 * Math.PI / 2;
+      this.currentSurface = this.defaultSurface;
+      mainCon.add(this.stateMod).add(this.rotationModifier()).add(this.currentSurface);
+      this.collision.alive = true;
     };
   };
 
@@ -176,6 +187,7 @@ define(function(require, exports, module) {
     this.particle = new Circle({
       radius:20,
     });
+    this.particle.ID = null;
     this.direction = 3 * Math.PI / 2;
   };
   Ship.prototype = new Thing();
@@ -202,11 +214,22 @@ define(function(require, exports, module) {
     this.particle = new Circle({
       radius:20,
     });
-    this.collisionCallback = function() {
-
-    };
+    this.particle.setMass(32);  // default mass is 1; this sets asteroids to 32x ship mass
   };
   Asteroid.prototype = new Thing();
+
+  /* -------- Global Collision Handler -------- */
+
+  var collision = new Collision();
+  createCollisions = function (array1, array2) {
+    for (var i=0; i<array1.length; i++) {
+      for (var j=0; j<array2.length; j++) {
+        physicsEng.attach(collision, array2[j].particle, array1[i].particle);
+      };
+    };
+  };
+
+
 
   /* --------- keystate register for player controls -------- */
 
@@ -230,15 +253,15 @@ define(function(require, exports, module) {
       // if (ships[i].collision.alive === false) {
       //   resetShip(ships[i]);
       // };
-      if (keyState[65] /* && ships[i].collision.alive */) {
+      if (keyState[65] /*&& ships[i].collision.alive*/) {
       ships[i].direction -= Math.PI / 32;
       mainCon.add(ships[i].stateMod).add(ships[i].rotationModifier()).add(ships[i].currentSurface);
       };
-      if (keyState[68] /* && ships[i].collision.alive */) {
+      if (keyState[68] /*&& ships[i].collision.alive*/) {
         ships[i].direction += Math.PI / 32;
         mainCon.add(ships[i].stateMod).add(ships[i].rotationModifier()).add(ships[i].currentSurface);
       };
-      if (keyState[87] /* && ships[i].collision.alive */) {
+      if (keyState[87] /*&& ships[i].collision.alive*/) {
         ships[i].addVector(0.02);
       };
       // if shield is not on, shield time remains and button is pressed, enable it
@@ -264,6 +287,13 @@ define(function(require, exports, module) {
       //   };
       //   ships[i].torpTimer = 5;
       // };
+      // if (ships[i].collision.resetTimer > 0) {
+      //   ships[i].collision.countdown(-1);
+      //   console.log('BOOM! ' + ships[i].collision.resetTimer);
+      //   if (ships[i].collision.resetTimer === 0) {
+      //     ships[i].reset(ships);
+      //   };
+      // };
     };
 
     for (var i=0; i < asteroids.length; i++) {
@@ -280,29 +310,42 @@ define(function(require, exports, module) {
   }, 1);
 
   var ships = [];
-  var ship0 = new Ship();
-  ship0.addToGame(ships);
+  createShips = function(number) {
+    for (var i=0; i<number; i++) {
+      var ship = new Ship();
+      ship.particle.ID = i;
+      ships.push(ship);
+    };
+  };
+  addShipsToGame = function() {
+    for (var i=0; i<ships.length; i++) {
+      physicsEng.addBody(ships[i].particle);
+      ships[i].currentSurface.render = function render() { return this.id; };
+      mainCon.add(ships[i].stateMod).add(ships[i].rotationModifier()).add(ships[i].currentSurface);
+    };
+  };
 
   var asteroids = [];
-  var asteroid0 = new Asteroid();
-  var asteroid1 = new Asteroid();
-  var asteroid2 = new Asteroid();
-  var asteroid3 = new Asteroid();
+  createAsteroids = function(number) {
+    for (var i=0; i<number; i++) {
+      var asteroid = new Asteroid();
+      asteroid.particle.ID = 1000 + i;
+      asteroids.push(asteroid);
+    };
+  };
+  addAsteroidsToGame = function() {
+    for (var i=0; i<asteroids.length; i++) {
+      physicsEng.addBody(asteroids[i].particle);
+      asteroids[i].currentSurface.render = function render() { return this.id; };
+      asteroids[i].setRandomPositionAndDirection(.1);
+      mainCon.add(asteroids[i].stateMod).add(asteroids[i].rotationModifier()).add(asteroids[i].currentSurface);
+    };
+  };
 
-  asteroid0.addToGame(asteroids);
-  asteroid0.setRandomPositionAndDirection(.1);
-  // asteroid1.addToGame(asteroids);
-  // asteroid1.setRandomPositionAndDirection(.1);
-  // asteroid2.addToGame(asteroids);
-  // asteroid2.setRandomPositionAndDirection(.1);
-  // asteroid3.addToGame(asteroids);
-  // asteroid3.setRandomPositionAndDirection(.1);
+  createShips(1);
+  createAsteroids(5);
+  createCollisions(ships, asteroids);
+  addShipsToGame();
+  addAsteroidsToGame();
 
-  ship0.createCollision(asteroid0, 'ship0 reset');
-
-  testEventHandler = new EventHandler();
-  testEventHandler.subscribe(ship0.collision.eventHandler);
-  testEventHandler.on('ship0 reset', function() {
-      console.log("Received ");
-  });
 });
