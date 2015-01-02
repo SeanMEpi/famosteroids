@@ -271,9 +271,12 @@ define(function(require, exports, module) {
   var collision = new Collision();
   var createCollisions = function (array1, array2) {
     for (var i=0; i<array1.length; i++) {
-      for (var j=0; j<array2.length; j++) {
-        physicsEng.attach(collision, array1[i].particle, array2[j].particle);
-      };
+      createOneCollision(array1[i], array2);
+    };
+  };
+  var createOneCollision = function (item, array2) {
+    for (var i=0; i<array2.length; i++) {
+      physicsEng.attach(collision, item.particle, array2[i].particle);
     };
   };
 
@@ -422,9 +425,13 @@ define(function(require, exports, module) {
   };
 
   createShips(1);
-  createAsteroids(5);
+  createAsteroids(1);
   createCollisions(ships, asteroids);
   addShipsToGame();
   addAsteroidsToGame();
+
+  createOneAsteroid();
+  createOneCollision(asteroids[asteroids.length - 1], ships);
+  addOneAsteroidToGame(asteroids[asteroids.length - 1]);
 
 });
