@@ -37,6 +37,12 @@ define(function(require, exports, module) {
     /* -------- Surfaces & movement -------- */
 
     this.defaultSurface = null;
+    this.deadSurface = new Surface({
+      size:[1,1],
+      properties: {
+        backgroundColor: '#030303'
+      }
+    });
     this.currentSurface = null;
     this.stateMod = null;
     this.particle = null;
@@ -151,11 +157,7 @@ define(function(require, exports, module) {
 
     /* -------- add remove items -------- */
 
-    this.removeFromGame = function(itemArray, itemIndex) {
-      physicsEng.removeBody(this.particle);
-      this.currentSurface.render = function(){ return null; };
-      itemArray.slice(itemArray[itemIndex],1);
-    };
+
     this.reset = function() {
       this.particle.setPosition([0,0,0]);
       this.direction = 3 * Math.PI / 2;
@@ -186,6 +188,7 @@ define(function(require, exports, module) {
     });
     this.direction = 3 * Math.PI / 2;
     this.eventHandler = new EventHandler();
+    this.eventHandler.explosionTimer = 0;
     this.eventHandler.explode = function(time) {
 
     };
@@ -220,12 +223,14 @@ define(function(require, exports, module) {
     this.eventHandler.stateMod = this.stateMod;
     this.eventHandler.particle = this.particle;
     this.eventHandler.explode = function(time) {
+      this.particle.setVelocity([0,0,0]);
       this.explosionSurface = new ImageSurface({
         size:[100,100],
         content: '/content/images/graphics-explosions-210621.gif'
       });
       this.currentSurface = this.explosionSurface;
       mainCon.add(this.stateMod).add(this.currentSurface);
+      this.explosionTimer = time;
     };
   };
   Asteroid.prototype = new Thing();
@@ -258,6 +263,13 @@ define(function(require, exports, module) {
   },true);
 
   /* -------- utility functions -------- */
+
+  var removeItem = function(item) {
+    console.log("removeItem " + item);
+    physicsEng.removeBody(item.particle);
+    item.currentSurface = item.deadSurface;
+    mainCon.add(item.stateMod).add(item.currentSurface);
+  };
 
   /* -------- main event loop -------- */
 
@@ -316,6 +328,12 @@ define(function(require, exports, module) {
         asteroids[i].magnitudeLimit(1);
         asteroids[i].stateMod.setTransform(asteroids[i].particle.getTransform());
         asteroids[i].wraparound();
+        if (asteroids[i].eventHandler.explosionTimer > 0) {
+          asteroids[i].eventHandler.explosionTimer -= 1;
+          if (asteroids[i].eventHandler.explosionTimer === 0) {
+            removeItem(asteroids[i]);
+          };
+        };
         // if (asteroids[i].collision.alive === false) {
         //   if (breakupAsteroid(asteroids[i]) === 'remove') {
         //     asteroids.splice(asteroids[i],1);
@@ -353,7 +371,6 @@ define(function(require, exports, module) {
       asteroids[i].eventHandler.ID = i + 1000;
       asteroids[i].eventHandler.subscribe(collision.broadcast);
       asteroids[i].eventHandler.on((i+1000).toString(), function() {
-        console.log(this.ID + " is the particle ID.");
         this.explode(30);
       });
     };
