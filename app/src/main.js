@@ -32,13 +32,10 @@ define(function(require, exports, module) {
 
   mainCon.add(backgroundStateMod).add(background);
 
-  var broadcast = new EventHandler();
-
   var Thing = function Thing() {
 
     /* -------- Surfaces & movement -------- */
     this.eventHandler = new EventHandler();
-    this.eventHandler.subscribe(broadcast);
     this.defaultSurface = null;
     this.currentSurface = null;
     this.stateMod = null;
@@ -187,10 +184,14 @@ define(function(require, exports, module) {
     this.particle = new Circle({
       radius:20,
     });
-    this.particle.ID = null;
     this.direction = 3 * Math.PI / 2;
+    this.explode = function(time) {
+      console.log("Impressive Explosion here!!!");
+    };
   };
   Ship.prototype = new Thing();
+
+
 
   /* -------- Asteroid object -------- */
   var Asteroid = function Asteroid() {
@@ -223,12 +224,20 @@ define(function(require, exports, module) {
   var collision = new Collision();
   createCollisions = function (array1, array2) {
     for (var i=0; i<array1.length; i++) {
+      array1[i].eventHandler.subscribe(collision.broadcast);
       for (var j=0; j<array2.length; j++) {
         physicsEng.attach(collision, array2[j].particle, array1[i].particle);
       };
     };
   };
 
+  collision.broadcast = new EventHandler();
+  collision.on('collision', function(data){
+    this.broadcast.emit(data.target.ID);
+    this.broadcast.emit(data.source.ID);
+    // var testVar = -1;
+    // this.broadcast.emit(testVar.toString());
+  });
 
 
   /* --------- keystate register for player controls -------- */
@@ -314,6 +323,10 @@ define(function(require, exports, module) {
     for (var i=0; i<number; i++) {
       var ship = new Ship();
       ship.particle.ID = i;
+      ship.eventHandler.on(i, function() {
+        console.log("Ship ID " + ship.particle.ID + " collided!");
+        ship.explode(60);
+      });
       ships.push(ship);
     };
   };
