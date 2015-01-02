@@ -1,6 +1,6 @@
 /* -------- famo.us setup -------- */
 define(function(require, exports, module) {
-  // 'use strict';
+  'use strict';
   // import dependencies
   var Engine = require('famous/core/Engine');
   var Modifier = require('famous/core/Modifier');
@@ -35,7 +35,7 @@ define(function(require, exports, module) {
   var Thing = function Thing() {
 
     /* -------- Surfaces & movement -------- */
-    this.eventHandler = new EventHandler();
+
     this.defaultSurface = null;
     this.currentSurface = null;
     this.stateMod = null;
@@ -185,13 +185,12 @@ define(function(require, exports, module) {
       radius:20,
     });
     this.direction = 3 * Math.PI / 2;
-    this.explode = function(time) {
-      console.log("Impressive Explosion here!!!");
+    this.eventHandler = new EventHandler();
+    this.eventHandler.explode = function(time) {
+
     };
   };
   Ship.prototype = new Thing();
-
-
 
   /* -------- Asteroid object -------- */
   var Asteroid = function Asteroid() {
@@ -216,29 +215,37 @@ define(function(require, exports, module) {
       radius:20,
     });
     this.particle.setMass(32);  // default mass is 1; this sets asteroids to 32x ship mass
+    this.eventHandler = new EventHandler();
+    this.eventHandler.currentSurface = this.currentSurface;
+    this.eventHandler.stateMod = this.stateMod;
+    this.eventHandler.particle = this.particle;
+    this.eventHandler.explode = function(time) {
+      this.explosionSurface = new ImageSurface({
+        size:[100,100],
+        content: '/content/images/graphics-explosions-210621.gif'
+      });
+      this.currentSurface = this.explosionSurface;
+      mainCon.add(this.stateMod).add(this.currentSurface);
+    };
   };
   Asteroid.prototype = new Thing();
 
   /* -------- Global Collision Handler -------- */
 
   var collision = new Collision();
-  createCollisions = function (array1, array2) {
+  var createCollisions = function (array1, array2) {
     for (var i=0; i<array1.length; i++) {
-      array1[i].eventHandler.subscribe(collision.broadcast);
       for (var j=0; j<array2.length; j++) {
-        physicsEng.attach(collision, array2[j].particle, array1[i].particle);
+        physicsEng.attach(collision, array1[i].particle, array2[j].particle);
       };
     };
   };
 
   collision.broadcast = new EventHandler();
   collision.on('collision', function(data){
-    this.broadcast.emit(data.target.ID);
     this.broadcast.emit(data.source.ID);
-    // var testVar = -1;
-    // this.broadcast.emit(testVar.toString());
+    console.log("Emitted: " + data.source.ID);
   });
-
 
   /* --------- keystate register for player controls -------- */
 
@@ -319,18 +326,18 @@ define(function(require, exports, module) {
   }, 1);
 
   var ships = [];
-  createShips = function(number) {
+  var createShips = function(number) {
     for (var i=0; i<number; i++) {
-      var ship = new Ship();
-      ship.particle.ID = i;
-      ship.eventHandler.on(i, function() {
-        console.log("Ship ID " + ship.particle.ID + " collided!");
-        ship.explode(60);
+      ships[i] = new Ship();
+      ships[i].particle.ID = i;
+      ships[i].eventHandler.subscribe(collision.broadcast);
+      ships[i].eventHandler.on(i, function() {
+        console.log("Explosion");
+        this.explode(60);
       });
-      ships.push(ship);
     };
   };
-  addShipsToGame = function() {
+  var addShipsToGame = function() {
     for (var i=0; i<ships.length; i++) {
       physicsEng.addBody(ships[i].particle);
       ships[i].currentSurface.render = function render() { return this.id; };
@@ -339,14 +346,19 @@ define(function(require, exports, module) {
   };
 
   var asteroids = [];
-  createAsteroids = function(number) {
+  var createAsteroids = function(number) {
     for (var i=0; i<number; i++) {
-      var asteroid = new Asteroid();
-      asteroid.particle.ID = 1000 + i;
-      asteroids.push(asteroid);
+      asteroids[i] = new Asteroid();
+      asteroids[i].particle.ID = i + 1000;
+      asteroids[i].eventHandler.ID = i + 1000;
+      asteroids[i].eventHandler.subscribe(collision.broadcast);
+      asteroids[i].eventHandler.on((i+1000).toString(), function() {
+        console.log(this.ID + " is the particle ID.");
+        this.explode(30);
+      });
     };
   };
-  addAsteroidsToGame = function() {
+ var addAsteroidsToGame = function() {
     for (var i=0; i<asteroids.length; i++) {
       physicsEng.addBody(asteroids[i].particle);
       asteroids[i].currentSurface.render = function render() { return this.id; };
@@ -356,7 +368,7 @@ define(function(require, exports, module) {
   };
 
   createShips(1);
-  createAsteroids(5);
+  createAsteroids(3);
   createCollisions(ships, asteroids);
   addShipsToGame();
   addAsteroidsToGame();
