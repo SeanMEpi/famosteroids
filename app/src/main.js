@@ -190,11 +190,19 @@ define(function(require, exports, module) {
       createOneAsteroid(MediumAsteroid);
       createOneCollision(asteroids[asteroids.length - 1], ships);
       addOneAsteroidToGame(asteroids[asteroids.length - 1]);
-      asteroids[asteroids.length -1].particle.setPosition(this.particle.getPosition());
+      var randomX = Random.integer(-10,10);
+      var randomY = Random.integer(-10,10);
+      var newX = this.particle.getPosition()[0] + randomX;
+      var newY = this.particle.getPosition()[1] + randomY;
+      asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
       createOneAsteroid(MediumAsteroid);
       createOneCollision(asteroids[asteroids.length - 1], ships);
       addOneAsteroidToGame(asteroids[asteroids.length - 1]);
-      asteroids[asteroids.length -1].particle.setPosition(this.particle.getPosition());
+      randomX = Random.integer(-10,10);
+      randomY = Random.integer(-10,10);
+      newX = this.particle.getPosition()[0] + randomX;
+      newY = this.particle.getPosition()[1] + randomY;
+      asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
     };
   };
   Asteroid.prototype = new Thing();
@@ -219,6 +227,8 @@ define(function(require, exports, module) {
     this.eventHandler.particle = this.particle;
     this.eventHandler.explode = function(time) {
       this.particle.setVelocity([0,0,0]);
+      var currentX = this.particle.getPosition()[0];
+      var currentY = this.particle.getPosition()[1];
       this.explosionSurface = new ImageSurface({
         size:[100,100],
         content: '/content/images/graphics-explosions-210621.gif'
@@ -229,11 +239,19 @@ define(function(require, exports, module) {
       createOneAsteroid(SmallAsteroid);
       createOneCollision(asteroids[asteroids.length - 1], ships);
       addOneAsteroidToGame(asteroids[asteroids.length - 1]);
-      asteroids[asteroids.length -1].particle.setPosition(this.particle.getPosition());
+      var randomX = Random.integer(-10,10);
+      var randomY = Random.integer(-10,10);
+      var newX = currentX + randomX;
+      var newY = currentY + randomY;
+      asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
       createOneAsteroid(SmallAsteroid);
       createOneCollision(asteroids[asteroids.length - 1], ships);
       addOneAsteroidToGame(asteroids[asteroids.length - 1]);
-      asteroids[asteroids.length -1].particle.setPosition(this.particle.getPosition());
+      randomX = Random.integer(-10,10);
+      randomY = Random.integer(-10,10);
+      newX = currentX + randomX;
+      newY = currentY + randomY;
+      asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
     };
   };
   MediumAsteroid.prototype = new Thing();
@@ -289,13 +307,14 @@ define(function(require, exports, module) {
       radius:10,
     });
     this.direction = 0;
-    this.existanceTimer = 0;
+    this.existanceTimer = 120;
     this.eventHandler = new EventHandler();
     this.eventHandler.currentSurface = this.currentSurface;
     this.eventHandler.stateMod = this.stateMod;
     this.eventHandler.particle = this.particle;
     this.eventHandler.explode = function(time) {
       this.particle.setVelocity([0,0,0]);
+      this.currentSurface = this.deadSurface;
       mainCon.add(this.stateMod).add(this.currentSurface);
       this.explosionTimer = time;
     };
@@ -406,6 +425,7 @@ define(function(require, exports, module) {
         asteroids[i].eventHandler.explosionTimer -= 1;
         if (asteroids[i].eventHandler.explosionTimer === 0) {
           removeItem(asteroids[i]);
+          asteroids.splice(i, 1);
         };
       };
     };
@@ -417,6 +437,14 @@ define(function(require, exports, module) {
         torpedos[i].eventHandler.explosionTimer -= 1;
         if (torpedos[i].eventHandler.explosionTimer === 0) {
           removeItem(torpedos[i]);
+          torpedos.splice(i, 1);
+        };
+      };
+      if (torpedos[i].existanceTimer > 0) {
+        torpedos[i].existanceTimer -= 1;
+        if (torpedos[i].existanceTimer === 0) {
+          removeItem(torpedos[i]);
+          torpedos.splice(i,1);
         };
       };
     };
@@ -477,7 +505,7 @@ define(function(require, exports, module) {
     torpedos[thisIndex].eventHandler.ID = thisIndex + 2000;
     torpedos[thisIndex].eventHandler.subscribe(collision.broadcast);
     torpedos[thisIndex].eventHandler.on((thisIndex+2000).toString(), function() {
-      this.explode(30);
+      this.explode(0);
     });
     createOneCollision(torpedos[thisIndex], asteroids);
     physicsEng.addBody(torpedos[thisIndex].particle);
@@ -485,23 +513,15 @@ define(function(require, exports, module) {
     torpedos[thisIndex].direction = ship.direction;
     torpedos[thisIndex].particle.setPosition(ship.particle.getPosition());
     torpedos[thisIndex].particle.setVelocity(ship.particle.getVelocity());
-    torpedos[thisIndex].addVector(.2);
+    torpedos[thisIndex].addVector(.5);
     mainCon.add(torpedos[thisIndex].stateMod).add(torpedos[thisIndex].rotationModifier()).add(torpedos[thisIndex].currentSurface);
     ship.torpTimer = 5;
   };
 
   createShips(1);
-  createAsteroids(3, Asteroid);
+  createAsteroids(1, Asteroid);
   createCollisions(ships, asteroids);
   addShipsToGame();
   addAsteroidsToGame();
-
-  createOneAsteroid(MediumAsteroid);
-  createOneCollision(asteroids[asteroids.length - 1], ships);
-  addOneAsteroidToGame(asteroids[asteroids.length - 1]);
-
-  createOneAsteroid(SmallAsteroid);
-  createOneCollision(asteroids[asteroids.length - 1], ships);
-  addOneAsteroidToGame(asteroids[asteroids.length - 1]);
 
 });
