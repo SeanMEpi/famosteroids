@@ -150,7 +150,6 @@ define(function(require, exports, module) {
     this.eventHandler.stateMod = this.stateMod;
     this.eventHandler.particle = this.particle;
     this.eventHandler.explode = function(time) {
-      this.particle.setVelocity([0,0,0]);
       this.explosionSurface = new ImageSurface({
         size:[100,100],
         content: '/content/images/graphics-explosions-210621.gif'
@@ -159,7 +158,6 @@ define(function(require, exports, module) {
       mainCon.add(this.stateMod).add(this.currentSurface);
       this.explosionTimer = time;
     };
-
   };
   Ship.prototype = new Thing();
 
@@ -191,6 +189,14 @@ define(function(require, exports, module) {
       this.currentSurface = this.explosionSurface;
       mainCon.add(this.stateMod).add(this.currentSurface);
       this.explosionTimer = time;
+      createOneAsteroid(MediumAsteroid);
+      createOneCollision(asteroids[asteroids.length - 1], ships);
+      addOneAsteroidToGame(asteroids[asteroids.length - 1]);
+      asteroids[asteroids.length -1].particle.setPosition(this.particle.getPosition());
+      createOneAsteroid(MediumAsteroid);
+      createOneCollision(asteroids[asteroids.length - 1], ships);
+      addOneAsteroidToGame(asteroids[asteroids.length - 1]);
+      asteroids[asteroids.length -1].particle.setPosition(this.particle.getPosition());
     };
   };
   Asteroid.prototype = new Thing();
@@ -263,7 +269,7 @@ define(function(require, exports, module) {
     };
 
   };
-  Ship.prototype = new Thing();
+  Torpedo.prototype = new Thing();
 
 
   /* -------- Global Collision Handler -------- */
@@ -397,14 +403,14 @@ define(function(require, exports, module) {
   };
 
   var asteroids = [];
-  var createAsteroids = function(number) {
+  var createAsteroids = function(number, type) {
     for (var i=0; i<number; i++) {
-      createOneAsteroid();
+      createOneAsteroid(type);
     };
   };
-  var createOneAsteroid = function() {
+  var createOneAsteroid = function(type) {
     var thisIndex = asteroids.length;
-    asteroids[thisIndex] = new Asteroid();
+    asteroids[thisIndex] = new type();
     asteroids[thisIndex].particle.ID = thisIndex + 1000;
     asteroids[thisIndex].eventHandler.ID = thisIndex + 1000;
     asteroids[thisIndex].eventHandler.subscribe(collision.broadcast);
@@ -425,12 +431,12 @@ define(function(require, exports, module) {
   };
 
   createShips(1);
-  createAsteroids(1);
+  createAsteroids(1, Asteroid);
   createCollisions(ships, asteroids);
   addShipsToGame();
   addAsteroidsToGame();
 
-  createOneAsteroid();
+  createOneAsteroid(Asteroid);
   createOneCollision(asteroids[asteroids.length - 1], ships);
   addOneAsteroidToGame(asteroids[asteroids.length - 1]);
 

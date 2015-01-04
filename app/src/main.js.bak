@@ -212,13 +212,7 @@ define(function(require, exports, module) {
     var torpedoArray = [];
     var Torpedo = function Torpedo(firer, asteroids) {
       //surface setup
-      this.torpedoSurface = new Surface ({
-        size: [10,10],
-        properties: {
-          backgroundColor: '#63C7DB',
-          borderRadius: '200px'
-        }
-      });
+      dd
       this.deadTorpedo = new Surface ({
         size: [10,10],
         properties: {
