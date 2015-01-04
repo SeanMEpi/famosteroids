@@ -228,9 +228,48 @@ define(function(require, exports, module) {
       this.currentSurface = this.explosionSurface;
       mainCon.add(this.stateMod).add(this.currentSurface);
       this.explosionTimer = time;
+      createOneAsteroid(SmallAsteroid);
+      createOneCollision(asteroids[asteroids.length - 1], ships);
+      addOneAsteroidToGame(asteroids[asteroids.length - 1]);
+      asteroids[asteroids.length -1].particle.setPosition(this.particle.getPosition());
+      createOneAsteroid(SmallAsteroid);
+      createOneCollision(asteroids[asteroids.length - 1], ships);
+      addOneAsteroidToGame(asteroids[asteroids.length - 1]);
+      asteroids[asteroids.length -1].particle.setPosition(this.particle.getPosition());
     };
   };
   MediumAsteroid.prototype = new Thing();
+
+  var SmallAsteroid = function SmallAsteroid() {
+    this.defaultSurface = new ImageSurface({
+      size:[25,25],
+      content: '/content/images/asteroid_small.png'
+    });
+    this.currentSurface = this.defaultSurface;
+    this.stateMod = new StateModifier({
+      align: [0.5, 0.5],
+      origin: [0.5, 0.5]
+    });
+    this.particle = new Circle({
+      radius:20,
+    });
+    this.particle.setMass(8);  // default mass is 1; this sets asteroids to 32x ship mass
+    this.eventHandler = new EventHandler();
+    this.eventHandler.currentSurface = this.currentSurface;
+    this.eventHandler.stateMod = this.stateMod;
+    this.eventHandler.particle = this.particle;
+    this.eventHandler.explode = function(time) {
+      this.particle.setVelocity([0,0,0]);
+      this.explosionSurface = new ImageSurface({
+        size:[100,100],
+        content: '/content/images/graphics-explosions-210621.gif'
+      });
+      this.currentSurface = this.explosionSurface;
+      mainCon.add(this.stateMod).add(this.currentSurface);
+      this.explosionTimer = time;
+    };
+  };
+  SmallAsteroid.prototype = new Thing();
 
   /* -------- Torpedo Objects -------- */
 
@@ -431,12 +470,12 @@ define(function(require, exports, module) {
   };
 
   createShips(1);
-  createAsteroids(1, Asteroid);
+  createAsteroids(4, Asteroid);
   createCollisions(ships, asteroids);
   addShipsToGame();
   addAsteroidsToGame();
 
-  createOneAsteroid(Asteroid);
+  createOneAsteroid(MediumAsteroid);
   createOneCollision(asteroids[asteroids.length - 1], ships);
   addOneAsteroidToGame(asteroids[asteroids.length - 1]);
 
