@@ -435,7 +435,6 @@ define(function(require, exports, module) {
         asteroids[i].eventHandler.explosionTimer -= 1;
         if (asteroids[i].eventHandler.explosionTimer === 0) {
           removeItem(asteroids[i]);
-          asteroids.splice(i, 1);
         };
       };
     };
