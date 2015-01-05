@@ -178,7 +178,9 @@ define(function(require, exports, module) {
     this.eventHandler.currentSurface = this.currentSurface;
     this.eventHandler.stateMod = this.stateMod;
     this.eventHandler.particle = this.particle;
+    this.eventHandler.explodeAllow = true;
     this.eventHandler.explode = function(time) {
+      this.explodeAllow = false;
       this.particle.setVelocity([0,0,0]);
       this.explosionSurface = new ImageSurface({
         size:[100,100],
@@ -225,7 +227,9 @@ define(function(require, exports, module) {
     this.eventHandler.currentSurface = this.currentSurface;
     this.eventHandler.stateMod = this.stateMod;
     this.eventHandler.particle = this.particle;
+    this.eventHandler.explodeAllow = true;
     this.eventHandler.explode = function(time) {
+      this.explodeAllow = false;
       this.particle.setVelocity([0,0,0]);
       var currentX = this.particle.getPosition()[0];
       var currentY = this.particle.getPosition()[1];
@@ -236,22 +240,25 @@ define(function(require, exports, module) {
       this.currentSurface = this.explosionSurface;
       mainCon.add(this.stateMod).add(this.currentSurface);
       this.explosionTimer = time;
-      createOneAsteroid(SmallAsteroid);
-      createOneCollision(asteroids[asteroids.length - 1], ships);
-      addOneAsteroidToGame(asteroids[asteroids.length - 1]);
-      var randomX = Random.integer(-10,10);
-      var randomY = Random.integer(-10,10);
-      var newX = currentX + randomX;
-      var newY = currentY + randomY;
-      asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
-      createOneAsteroid(SmallAsteroid);
-      createOneCollision(asteroids[asteroids.length - 1], ships);
-      addOneAsteroidToGame(asteroids[asteroids.length - 1]);
-      randomX = Random.integer(-10,10);
-      randomY = Random.integer(-10,10);
-      newX = currentX + randomX;
-      newY = currentY + randomY;
-      asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
+      // if (this.createDisallow === 0) {
+      //   createOneAsteroid(SmallAsteroid);
+      //   createOneCollision(asteroids[asteroids.length - 1], ships);
+      //   addOneAsteroidToGame(asteroids[asteroids.length - 1]);
+      //   var randomX = Random.integer(-10,10);
+      //   var randomY = Random.integer(-10,10);
+      //   var newX = currentX + randomX;
+      //   var newY = currentY + randomY;
+      //   asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
+      //   createOneAsteroid(SmallAsteroid);
+      //   createOneCollision(asteroids[asteroids.length - 1], ships);
+      //   addOneAsteroidToGame(asteroids[asteroids.length - 1]);
+      //   randomX = Random.integer(-10,10);
+      //   randomY = Random.integer(-10,10);
+      //   newX = currentX + randomX;
+      //   newY = currentY + randomY;
+      //   asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
+      //   this.createDisallow = 5;
+      // };
     };
   };
   MediumAsteroid.prototype = new Thing();
@@ -274,6 +281,7 @@ define(function(require, exports, module) {
     this.eventHandler.currentSurface = this.currentSurface;
     this.eventHandler.stateMod = this.stateMod;
     this.eventHandler.particle = this.particle;
+    this.eventHandler.createDisallow = 0;
     this.eventHandler.explode = function(time) {
       this.particle.setVelocity([0,0,0]);
       this.explosionSurface = new ImageSurface({
@@ -321,7 +329,6 @@ define(function(require, exports, module) {
 
   };
   Torpedo.prototype = new Thing();
-
 
   /* -------- Global Collision Handler -------- */
 
@@ -421,6 +428,9 @@ define(function(require, exports, module) {
       asteroids[i].magnitudeLimit(1);
       asteroids[i].stateMod.setTransform(asteroids[i].particle.getTransform());
       asteroids[i].wraparound();
+      if (asteroids[i].eventHandler.createDisallow > 0) {
+        asteroids[i].eventHandler.createDisallow -= 1;
+      };
       if (asteroids[i].eventHandler.explosionTimer > 0) {
         asteroids[i].eventHandler.explosionTimer -= 1;
         if (asteroids[i].eventHandler.explosionTimer === 0) {
@@ -483,7 +493,9 @@ define(function(require, exports, module) {
     asteroids[thisIndex].eventHandler.ID = thisIndex + 1000;
     asteroids[thisIndex].eventHandler.subscribe(collision.broadcast);
     asteroids[thisIndex].eventHandler.on((thisIndex+1000).toString(), function() {
-      this.explode(20);
+      if (this.explodeAllow) {
+        this.explode(20);
+      };
     });
   };
   var addAsteroidsToGame = function() {
@@ -519,7 +531,7 @@ define(function(require, exports, module) {
   };
 
   createShips(1);
-  createAsteroids(1, Asteroid);
+  createAsteroids(3, Asteroid);
   createCollisions(ships, asteroids);
   addShipsToGame();
   addAsteroidsToGame();
