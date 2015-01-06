@@ -22,7 +22,9 @@ define(function(require, exports, module) {
 
   var background = new Surface({
     size: [(window.innerWidth), (window.innerHeight)],
+    content: 'Source code at https://github.com/SeanMEpi<br>Controls: w-thrust, a-rotate left, d-rotate right, l-fire<br>PRESS R TO RESET',
     properties: {
+      color: 'grey',
       backgroundColor: '#030303'
     }
   });
@@ -45,6 +47,7 @@ define(function(require, exports, module) {
     this.stateMod = null;
     this.particle = null;
     this.direction = null;
+    this.dead = false;
     this.rotationModifier = function() {
       return new StateModifier({ transform: Transform.rotateZ(this.direction) });
     };
@@ -240,25 +243,6 @@ define(function(require, exports, module) {
       this.currentSurface = this.explosionSurface;
       mainCon.add(this.stateMod).add(this.currentSurface);
       this.explosionTimer = time;
-      // if (this.createDisallow === 0) {
-      //   createOneAsteroid(SmallAsteroid);
-      //   createOneCollision(asteroids[asteroids.length - 1], ships);
-      //   addOneAsteroidToGame(asteroids[asteroids.length - 1]);
-      //   var randomX = Random.integer(-10,10);
-      //   var randomY = Random.integer(-10,10);
-      //   var newX = currentX + randomX;
-      //   var newY = currentY + randomY;
-      //   asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
-      //   createOneAsteroid(SmallAsteroid);
-      //   createOneCollision(asteroids[asteroids.length - 1], ships);
-      //   addOneAsteroidToGame(asteroids[asteroids.length - 1]);
-      //   randomX = Random.integer(-10,10);
-      //   randomY = Random.integer(-10,10);
-      //   newX = currentX + randomX;
-      //   newY = currentY + randomY;
-      //   asteroids[asteroids.length -1].particle.setPosition([newX, newY, 0]);
-      //   this.createDisallow = 5;
-      // };
     };
   };
   MediumAsteroid.prototype = new Thing();
@@ -366,6 +350,7 @@ define(function(require, exports, module) {
     physicsEng.removeBody(item.particle);
     item.currentSurface = item.deadSurface;
     mainCon.add(item.stateMod).add(item.currentSurface);
+    item.dead = true;
   };
 
   /* -------- main event loop -------- */
@@ -389,24 +374,15 @@ define(function(require, exports, module) {
       if (keyState[87] /*&& ships[i].collision.alive*/) {
         ships[i].addVector(0.02);
       };
+      if (keyState[82]) {
+        location.reload();
+      };
       if (ships[i].eventHandler.explosionTimer > 0) {
           ships[i].eventHandler.explosionTimer -= 1;
           if (ships[i].eventHandler.explosionTimer === 0) {
             removeItem(ships[i]);
           };
         };
-      // if shield is not on, shield time remains and button is pressed, enable it
-      // if (keyState[79] /* && ships[i].collision.alive */ && !ships[i].collision.shield && ships[i].allowShield) {
-      //   ships[i].shieldOn();
-      // };
-      //if shield is on and button is released, disable it
-      // if (!keyState[79] && ships[i].collision.shield) {
-      //   ships[i].shieldOff();
-      // };
-      //if shield is on, increment shield disable timer
-      // if (ships[i].collision.shield) {
-      //   ships[i].shieldTimer(10);
-      // };
 
       // allow torpedo fire every 5 frames if torpedos in play < 6
       if (ships[i].torpTimer > 0) {
@@ -415,13 +391,7 @@ define(function(require, exports, module) {
       if ((keyState[76]) && (torpedos.length < 6) && (ships[i].torpTimer === 0)) {
         createTorpedo(ships[i]);
       };
-      // if (ships[i].collision.resetTimer > 0) {
-      //   ships[i].collision.countdown(-1);
-      //   console.log('BOOM! ' + ships[i].collision.resetTimer);
-      //   if (ships[i].collision.resetTimer === 0) {
-      //     ships[i].reset(ships);
-      //   };
-      // };
+
     };
 
     for (var i=0; i < asteroids.length; i++) {
@@ -457,7 +427,6 @@ define(function(require, exports, module) {
         };
       };
     };
-
   }, 1);
 
   var ships = [];
@@ -488,10 +457,10 @@ define(function(require, exports, module) {
   var createOneAsteroid = function(type) {
     var thisIndex = asteroids.length;
     asteroids[thisIndex] = new type();
-    asteroids[thisIndex].particle.ID = thisIndex + 1000;
-    asteroids[thisIndex].eventHandler.ID = thisIndex + 1000;
+    asteroids[thisIndex].particle.ID = thisIndex + 2000;
+    asteroids[thisIndex].eventHandler.ID = thisIndex + 2000;
     asteroids[thisIndex].eventHandler.subscribe(collision.broadcast);
-    asteroids[thisIndex].eventHandler.on((thisIndex+1000).toString(), function() {
+    asteroids[thisIndex].eventHandler.on((thisIndex+2000).toString(), function() {
       if (this.explodeAllow) {
         this.explode(20);
       };
@@ -512,10 +481,10 @@ define(function(require, exports, module) {
   var createTorpedo = function(ship) {
     var thisIndex = torpedos.length;
     torpedos[thisIndex] = new Torpedo();
-    torpedos[thisIndex].particle.ID = thisIndex + 2000;
-    torpedos[thisIndex].eventHandler.ID = thisIndex + 2000;
+    torpedos[thisIndex].particle.ID = thisIndex + 1000;
+    torpedos[thisIndex].eventHandler.ID = thisIndex + 1000;
     torpedos[thisIndex].eventHandler.subscribe(collision.broadcast);
-    torpedos[thisIndex].eventHandler.on((thisIndex+2000).toString(), function() {
+    torpedos[thisIndex].eventHandler.on((thisIndex+1000).toString(), function() {
       this.explode(0);
     });
     createOneCollision(torpedos[thisIndex], asteroids);
@@ -529,10 +498,14 @@ define(function(require, exports, module) {
     ship.torpTimer = 5;
   };
 
-  createShips(1);
-  createAsteroids(3, Asteroid);
-  createCollisions(ships, asteroids);
-  addShipsToGame();
-  addAsteroidsToGame();
+  var resetGame = function() {
+    createShips(1);
+    createAsteroids(5, Asteroid);
+    createCollisions(ships, asteroids);
+    addShipsToGame();
+    addAsteroidsToGame();
+  };
+
+  resetGame();
 
 });
