@@ -395,6 +395,7 @@ define(function(require, exports, module) {
         ships[i].addVector(0.02);
       };
       if (keyState[82]) {
+        sessionStorage.score = scoreboard.score;
         location.reload();
       };
       if (ships[i].eventHandler.explosionTimer > 0) {
@@ -525,6 +526,12 @@ define(function(require, exports, module) {
   };
 
   var resetGame = function() {
+    var savedScore = parseInt(sessionStorage.score);
+    if (!savedScore) {
+      scoreboard.score = 0;
+    } else {
+      scoreboard.score = savedScore;
+    };
     createShips(1);
     createAsteroids(5, Asteroid);
     createCollisions(ships, asteroids);
