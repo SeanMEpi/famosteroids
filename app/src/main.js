@@ -16,6 +16,7 @@ define(function(require, exports, module) {
   var Timer = require('famous/utilities/Timer');
   var Random = require('famous/math/Random');
   var EventHandler = require('famous/core/EventHandler');
+  var CanvasSurface = require('famous/surfaces/CanvasSurface');
 
   var mainCon = Engine.createContext();
   var physicsEng = new PhysicsEngine();
@@ -33,6 +34,23 @@ define(function(require, exports, module) {
   });
 
   mainCon.add(backgroundStateMod).add(background);
+
+
+  var scoreboard = new CanvasSurface({
+      size:[200,100],
+      properties : {
+        backgroundColor: '#030303'
+      }
+  });
+  scoreboard.score = 0;
+  var scoreboardStateMod = new StateModifier({
+    align: [0.5, 0],
+    origin: [0.5, 0],
+    transform: Transform.translate(0, 0, -5)
+  });
+  mainCon.add(scoreboardStateMod).add(scoreboard);
+
+
 
   var Thing = function Thing() {
     /* -------- Surfaces & movement -------- */
@@ -183,6 +201,7 @@ define(function(require, exports, module) {
     this.eventHandler.particle = this.particle;
     this.eventHandler.explodeAllow = true;
     this.eventHandler.explode = function(time) {
+      scoreboard.score += 10;
       this.explodeAllow = false;
       this.particle.setVelocity([0,0,0]);
       this.explosionSurface = new ImageSurface({
@@ -232,6 +251,7 @@ define(function(require, exports, module) {
     this.eventHandler.particle = this.particle;
     this.eventHandler.explodeAllow = true;
     this.eventHandler.explode = function(time) {
+      scoreboard.score += 20;
       this.explodeAllow = false;
       this.particle.setVelocity([0,0,0]);
       var currentX = this.particle.getPosition()[0];
@@ -427,6 +447,12 @@ define(function(require, exports, module) {
         };
       };
     };
+
+    var ctx = scoreboard.getContext('2d');
+    ctx.font = "30px Arial";
+    ctx.fillStyle = 'white';
+    ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
+    ctx.fillText("Score: " + scoreboard.score.toString(),10,50);
   }, 1);
 
   var ships = [];
