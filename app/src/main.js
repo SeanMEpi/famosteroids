@@ -319,7 +319,7 @@ define(function(require, exports, module) {
       radius:10,
     });
     this.direction = 0;
-    this.existanceTimer = 120;
+    this.existanceTimer = 60;
     this.eventHandler = new EventHandler();
     this.eventHandler.currentSurface = this.currentSurface;
     this.eventHandler.stateMod = this.stateMod;
@@ -328,6 +328,7 @@ define(function(require, exports, module) {
       this.particle.setVelocity([0,0,0]);
       this.currentSurface = this.deadSurface;
       mainCon.add(this.stateMod).add(this.currentSurface);
+      physicsEng.removeBody(this.particle);
       this.explosionTimer = time;
     };
 
@@ -405,11 +406,11 @@ define(function(require, exports, module) {
           };
         };
 
-      // allow torpedo fire every 5 frames if torpedos in play < 6
+      // allow torpedo fire every 5 frames if torpedos in play < 4
       if (ships[i].torpTimer > 0) {
         ships[i].torpTimer -= 1;
       };
-      if ((keyState[76]) && (torpedos.length < 6) && (ships[i].torpTimer === 0)) {
+      if ((keyState[76]) && (torpedos.length < 4) && (ships[i].torpTimer === 0)) {
         createTorpedo(ships[i]);
       };
 
@@ -426,6 +427,7 @@ define(function(require, exports, module) {
         asteroids[i].eventHandler.explosionTimer -= 1;
         if (asteroids[i].eventHandler.explosionTimer === 0) {
           removeItem(asteroids[i]);
+          asteroids.splice(i,1);
         };
       };
     };
