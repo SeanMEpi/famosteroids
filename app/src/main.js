@@ -35,7 +35,6 @@ define(function(require, exports, module) {
 
   mainCon.add(backgroundStateMod).add(background);
 
-
   var scoreboard = new CanvasSurface({
       size:[200,100],
       properties : {
@@ -43,14 +42,13 @@ define(function(require, exports, module) {
       }
   });
   scoreboard.score = 0;
+  scoreboard.ships = 3;
   var scoreboardStateMod = new StateModifier({
     align: [0.5, 0],
     origin: [0.5, 0],
     transform: Transform.translate(0, 0, -5)
   });
   mainCon.add(scoreboardStateMod).add(scoreboard);
-
-
 
   var Thing = function Thing() {
     /* -------- Surfaces & movement -------- */
@@ -91,18 +89,18 @@ define(function(require, exports, module) {
       this.particle.setPosition([ randomX, randomY, 0]);
     };
     this.wraparound = function() {
-      if ( (this.particle.getPosition()[0]) >= (window.innerWidth / 2) ) {
+      if ((this.particle.getPosition()[0]) >= (window.innerWidth / 2)) {
         this.particle.setPosition([-window.innerWidth / 2, this.particle.getPosition()[1], 0]);
-      } else if ( (this.particle.getPosition()[0]) <= (-window.innerWidth / 2) ) {
+      } else if ((this.particle.getPosition()[0]) <= (-window.innerWidth / 2)) {
         this.particle.setPosition([window.innerWidth / 2, this.particle.getPosition()[1], 0]);
-      } else if ( (this.particle.getPosition()[1]) >= (window.innerHeight / 2) ) {
+      } else if ((this.particle.getPosition()[1]) >= (window.innerHeight / 2)) {
         this.particle.setPosition([this.particle.getPosition()[0], (-window.innerHeight / 2), 0]);
-      } else if ( (this.particle.getPosition()[1]) <= (-window.innerHeight / 2) ) {
+      } else if ((this.particle.getPosition()[1]) <= (-window.innerHeight / 2)) {
         this.particle.setPosition([this.particle.getPosition()[0], window.innerHeight / 2, 0]);
       };
     };
     this.magnitudeLimit = function(maxMagnitude) {
-      var magnitude = Math.sqrt( ((this.particle.getVelocity()[0]) * (this.particle.getVelocity()[0])) + ((this.particle.getVelocity()[1]) * (this.particle.getVelocity()[1])) );
+      var magnitude = Math.sqrt(((this.particle.getVelocity()[0]) * (this.particle.getVelocity()[0])) + ((this.particle.getVelocity()[1]) * (this.particle.getVelocity()[1])));
       if (magnitude >= maxMagnitude) {
         var xComponant = maxMagnitude * Math.cos(this.direction);
         var yComponant = maxMagnitude * Math.sin(this.direction);
@@ -338,12 +336,12 @@ define(function(require, exports, module) {
   /* -------- Global Collision Handler -------- */
 
   var collision = new Collision();
-  var createCollisions = function (array1, array2) {
+  var createCollisions = function(array1, array2) {
     for (var i=0; i<array1.length; i++) {
       createOneCollision(array1[i], array2);
     };
   };
-  var createOneCollision = function (item, array2) {
+  var createOneCollision = function(item, array2) {
     for (var i=0; i<array2.length; i++) {
       physicsEng.attach(collision, item.particle, array2[i].particle);
     };
@@ -358,10 +356,10 @@ define(function(require, exports, module) {
   /* --------- keystate register for player controls -------- */
 
   var keyState = {};
-  Engine.on('keydown',function(e){
+  Engine.on('keydown',function(e) {
     keyState[e.keyCode || e.which] = true;
   },true);
-  Engine.on('keyup',function(e){
+  Engine.on('keyup',function(e) {
     keyState[e.keyCode || e.which] = false;
   },true);
 
@@ -376,7 +374,7 @@ define(function(require, exports, module) {
 
   /* -------- main event loop -------- */
 
-  Timer.every( function() {
+  Timer.every(function() {
     for (var i=0; i < ships.length; i++) {
       ships[i].magnitudeLimit(1);
       ships[i].stateMod.setTransform(ships[i].particle.getTransform());
@@ -397,11 +395,13 @@ define(function(require, exports, module) {
       };
       if (keyState[82]) {
         sessionStorage.score = scoreboard.score;
+        sessionStorage.ships = scoreboard.ships;
         location.reload();
       };
       if (ships[i].eventHandler.explosionTimer > 0) {
           ships[i].eventHandler.explosionTimer -= 1;
           if (ships[i].eventHandler.explosionTimer === 0) {
+            scoreboard.ships -=1;
             removeItem(ships[i]);
           };
         };
@@ -452,10 +452,10 @@ define(function(require, exports, module) {
     };
 
     var ctx = scoreboard.getContext('2d');
-    ctx.font = "30px Arial";
+    ctx.font = '30px Arial';
     ctx.fillStyle = 'white';
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.fillText("Score: " + scoreboard.score.toString(),10,50);
+    ctx.fillText('Score: ' + scoreboard.score.toString(),10,50);
   }, 1);
 
   var ships = [];
@@ -472,7 +472,9 @@ define(function(require, exports, module) {
   var addShipsToGame = function() {
     for (var i=0; i<ships.length; i++) {
       physicsEng.addBody(ships[i].particle);
-      ships[i].currentSurface.render = function render() { return this.id; };
+      ships[i].currentSurface.render = function render() {
+        return this.id;
+      };
       mainCon.add(ships[i].stateMod).add(ships[i].rotationModifier()).add(ships[i].currentSurface);
     };
   };
@@ -502,7 +504,9 @@ define(function(require, exports, module) {
   };
   var addOneAsteroidToGame = function(asteroid) {
     physicsEng.addBody(asteroid.particle);
-    asteroid.currentSurface.render = function render() { return this.id; };
+    asteroid.currentSurface.render = function render() {
+     return this.id;
+    };
     asteroid.setRandomPositionAndDirection(.1);
     mainCon.add(asteroid.stateMod).add(asteroid.rotationModifier()).add(asteroid.currentSurface);
   };
@@ -518,7 +522,9 @@ define(function(require, exports, module) {
     });
     createOneCollision(torpedos[thisIndex], asteroids);
     physicsEng.addBody(torpedos[thisIndex].particle);
-    torpedos[thisIndex].currentSurface.render = function render() { return this.id; };
+    torpedos[thisIndex].currentSurface.render = function render() {
+     return this.id;
+    };
     torpedos[thisIndex].direction = ship.direction;
     torpedos[thisIndex].particle.setPosition(ship.particle.getPosition());
     torpedos[thisIndex].particle.setVelocity(ship.particle.getVelocity());
@@ -527,13 +533,21 @@ define(function(require, exports, module) {
     ship.torpTimer = 5;
   };
 
-  var resetGame = function() {
+  var newLevel = function() {
     var savedScore = parseInt(sessionStorage.score);
     if (!savedScore) {
       scoreboard.score = 0;
     } else {
       scoreboard.score = savedScore;
     };
+    var shipsRemaining = parseInt(sessionStorage.ships);
+    if (!shipsRemaining) {
+      scoreboard.ships = 3;
+      scoreboard.score = 0;
+    } else {
+      scoreboard.ships = shipsRemaining;
+    };
+    console.log("Ships Left: " + scoreboard.ships);
     createShips(1);
     createAsteroids(5, Asteroid);
     createCollisions(ships, asteroids);
@@ -541,6 +555,6 @@ define(function(require, exports, module) {
     addAsteroidsToGame();
   };
 
-  resetGame();
+  newLevel();
 
 });
