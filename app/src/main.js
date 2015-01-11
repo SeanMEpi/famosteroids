@@ -403,6 +403,9 @@ define(function(require, exports, module) {
           if (ships[i].eventHandler.explosionTimer === 0) {
             scoreboard.ships -=1;
             removeItem(ships[i]);
+            sessionStorage.score = scoreboard.score;
+            sessionStorage.ships = scoreboard.ships;
+            location.reload();
           };
         };
 
