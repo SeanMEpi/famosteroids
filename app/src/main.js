@@ -550,7 +550,7 @@ define(function(require, exports, module) {
     } else {
       scoreboard.ships = shipsRemaining;
     };
-    console.log("Ships Left: " + scoreboard.ships);
+    console.log('Ships Left: ' + scoreboard.ships);
     createShips(1);
     createAsteroids(5, Asteroid);
     createCollisions(ships, asteroids);
