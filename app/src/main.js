@@ -36,7 +36,7 @@ define(function(require, exports, module) {
   mainCon.add(backgroundStateMod).add(background);
 
   var scoreboard = new CanvasSurface({
-      size:[200,100],
+      size:[300,100],
       properties : {
         backgroundColor: '#030303'
       }
@@ -458,7 +458,7 @@ define(function(require, exports, module) {
     ctx.font = '30px Arial';
     ctx.fillStyle = 'white';
     ctx.clearRect(0, 0, ctx.canvas.width, ctx.canvas.height);
-    ctx.fillText('Score: ' + scoreboard.score.toString(),10,50);
+    ctx.fillText('Score: ' + scoreboard.score.toString() + " Ships: " + (scoreboard.ships -1).toString(),10,50);
   }, 1);
 
   var ships = [];
