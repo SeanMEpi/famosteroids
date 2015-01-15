@@ -1,5 +1,6 @@
 <h2>Famosteroids!</h2>
-<p>This is the info page for the source repositiory for famosteroids. If you're looking for the live demo, it's <a href="http://seanmepi.github.io/famosteroids-dist/">here.</a> The source code is on the master branch.</p>
+<p>This is the info page for the source repositiory for famosteroids. If you're looking for the live demo, it's <a href="http://seanmepi.github.io/famosteroids-dist/">here.</a> The source code is on the famesteroids master branch.</p>
+<p>This page here is intended to (eventually) be a jumping-off point for a tutorial.  At the moment I'm just recollecting the process and adding whatever silliness comes to mind.</p>
 <p>(I should also add, that there will be no attempt here to wow you with ultramodern web design.  Just be happy I'm not using the blink tag).</p>
 
 <p>So, after experimenting with writing a game-like thing in pure javscript <a href="https://github.com/SeanMEpi/soundbox">(here)</a> and then rewriting to take advantage of the famo.us physics engine, I decided to write a game from the ground up.  What better way to learn the physics engine in detail?  More or less arbitrairly I chose Asteroids, as I had already used some vector math in the previous projects and knew that I could use it again for the ship motion.  How hard could it be?</p>
@@ -9,4 +10,4 @@
 <p><img src="http://radioactive-studios.com/biohazard-films/files/2012/10/TOS-oracle.jpg" alt="Oracle of the people">(Ok, it isn't <em>quite</em> like that, but you get the idea).</p>
 <p>In a relatively short period of time, a detailed answer was posted...that didn't solve my problem. [sigh].  So I wrote a solution myself.  To udnerstand what I did, I'll have to explain a bit about how famo.us particles work.</p>
 <p>Particles are a thing that the physics engine tracks.  Assign a particle to something, and the physics engine will keep track of its interactions with other things.  The particles can also be manipulated directly; i.e. with setPosition the particle can be placed where you want it.  So, to regulate the speed, I just find out what the speed and direction of the particle is, change the speed in whatever way I see fit, and keep the direction the same.  However, famous doesn't let you set the speed and direction of a particle directly; it lets you set the X and Y velocities.  So I dusted off the trig textbook (not really, I googled it) and wrote functions to convert X/Y velocities to speed and direction (a.k.a. polar coordinates) and back again.</p>
-<p>TL;DR Famous will not solve all your problems for you; some assembly is required.</p>
+
